@@ -1,0 +1,9 @@
+% bibentry template for lsst.bib in https://github.com/lsst/lsst-texmf/blob/main/texmf/bibtex/bib/lsst.bib
+
+@DocuShare{SQR-066,
+   author = { Adam Thornton },
+    title = {Proposal for separate RSP User Lab Spawning Service},
+     year = 2022,
+    month = Jan,
+   handle = {SQR-066},
+      url = {https://sqr-066.lsst.io } }

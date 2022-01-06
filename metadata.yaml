@@ -1,0 +1,59 @@
+# Document metadata. metadata.yaml is used by documenteer and other tools
+# to build the document and index it. It should be maintained alongside the
+# document in git and kept up to date.
+
+# The series identifier. E.g. SQR, DMTN, SMTN, LDM, LSE, etc.
+series: "SQR"
+
+# Document number, as a string. It should be three digits, padded with leading zeros
+serial_number: "066"
+
+# Serial number of the document. E.g. SQR-001
+# NOTE: this field is *planned* for deprecation
+doc_id: "SQR-066"
+
+# Title of the document, without the series/serial designation
+doc_title: "Proposal for separate RSP User Lab Spawning Service"
+
+# Author names, ordered as a list. Each author name should be formatted as 'First Last'
+authors:
+  - "Adam Thornton"
+
+# Current document revision date, YYYY-MM-DD
+# Only set this field if you need to manually fix the revision date;
+# the revision date is obtained from the HEAD Git commit otherwise.
+# last_revised: 'YYYY-MM-DD'
+
+# Version. Use semantic versioning, e.g., 1.0.0, including .dev, as necessary.
+# This version string should correspond to the git tag when the document is
+# published on Zenodo. If left commented out, the current Git branch is used
+# instead version: '1.0.0'
+
+# Digital Object Identifier (DOI). Uncomment if available.
+# Keep this DOI updated as new releases are pushed to Zenodo
+# doi: 10.5281/zenodo.#####
+
+# Copyright statement
+copyright: "2022, Association of Universities for Research in Astronomy, Inc. (AURA)"
+
+# Description. A short, 1-2 sentence statemement used by document indices.
+description: "JupyterHub-plus-KubeSpawner, when used in an environment with per-user namespaces, requires a terrifying amount of privilege.  We propose moving the actual creation-of-arbitrary-objects-in-a-K8s-cluster piece of JupyterHub's job to its own service, which can be substantially simpler and present a much reduced attack surface.  Conceptually the proposed spawner service would look much like Moneypenny (and indeed Moneypenny's functionality could probably be rolled into it).  The same spawner could also be used to create Dask objects in the user's namespace.
+
+In addition to the service itself, it would be necessary to write adaptor libraries for (at least) JupyterHub and Dask.  For JupyterHub this would implement a Spawner interface, but the mechanism by which the Spawner did its thing would simply be making web calls to the Spawning Service.  A similar approach could be used for Dask, to replace the Kubernetes calls to create Dask pods and services with HTTP calls to the Spawning Service."
+
+# Abstract, if available
+# abstract: >
+#           Write your paragraph
+#           here with multiple lines.
+#
+#           You can have multiple paragraphs too.
+
+# URL where this document is published by Read the Docs. e.g. http://sqr-001.lsst.codes
+url: "https://sqr-066.lsst.io"
+
+# LSST Docushare URL, if authoritative versions of this are are stored there.
+# Leave as an empty string or comment out this key if there is no Docushare URL.
+docushare_url: ""
+
+# GitHub repo URL
+github_url: "https://github.com/lsst-sqre/sqr-066"
