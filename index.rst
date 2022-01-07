@@ -53,6 +53,14 @@
 In addition to the service itself, it would be necessary to write adaptor libraries for (at least) JupyterHub and Dask.  For JupyterHub this would implement a Spawner interface, but the mechanism by which the Spawner did its thing would simply be making web calls to the Spawning Service.  A similar approach could be used for Dask, to replace the Kubernetes calls to create Dask pods and services with HTTP calls to the Spawning Service.
 
 .. Add content here.
+
+Service architecture
+====================
+
+.. diagrams:: hub.py
+
+.. diagrams:: dask.py
+
 .. Do not include the document title (it's automatically added from metadata.yaml).
 
 .. .. rubric:: References
