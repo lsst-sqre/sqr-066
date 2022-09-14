@@ -375,6 +375,9 @@ The spawner implementation will assume that the ``token`` element of the authent
     Yields (as an async generator) the list of progress events accumulated by the previous ``start`` or ``stop`` method call.
     Returns once internal state has marked the operation complete.
 
+    This is implemented by taking a lock on the event list for this user, returning all of the accumulated events so far, ending the loop if the operation is complete, and if not, waiting on the per-user ``asyncio.Condition`` lock.
+    All ``progress`` calls for that user will then be woken up by ``start`` or ``stop`` when there's a new message, and can yield that message and then wait again if the operation is still not complete.
+
 ``get_state``, ``load_state``, ``clear_state``
     This spawner implementation doesn't truly require any state, but reportedly one has to store at least one key or JupyterHub thinks the lab doesn't exist.
     ``get_state`` will therefore record the event information used by ``progress`` (events, progress amount, and completion flag).
