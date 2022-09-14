@@ -174,8 +174,7 @@ If Science Platform administrators need to test pod spawning or see the event st
                "size": "large"
            },
            "env": {
-               "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api",
-               ...
+               "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api"
            },
            "uid": 4266950,
            "gid": 4266950,
@@ -233,8 +232,7 @@ If Science Platform administrators need to test pod spawning or see the event st
                "size": "large"
            },
            "env": {
-               "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api",
-               ...
+               "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api"
            }
        }
 
@@ -345,10 +343,13 @@ The spawner implementation will assume that the ``token`` element of the authent
     .. code-block:: json
 
        {
-           "progress": 80, # integer, out of 100
-           "message": text, # text message (will be escaped for HTML)
-           "html_message": html_text, # optional html-formatted message
+           "progress": 80,
+           "message": "text",
+           "html_message": "html_text"
        }
+
+    ``progress`` is a number out of 100 indicating percent completion.
+    ``html_message`` is optional and is used when rendering the message on a web page.
 
     This doesn't exactly match the event stream provided by the spawner.
     To convert, keep the current progress state and update it when a ``progress`` event is received, without emiting a new event.
@@ -618,8 +619,7 @@ All of these API calls require ``admin:notebook`` scope.
                    "name": "<human readable name>",
                    "hash": "<image hash>",
                    "nodes": ["<node>", "<node>"]
-               },
-               ...
+               }
            ],
            "pending": [
                {
@@ -628,15 +628,13 @@ All of these API calls require ``admin:notebook`` scope.
                    "hash": "<image hash>",
                    "nodes": ["<node>", "<node>"],
                    "missing": ["<node>", "<node>"]
-               },
-               ...
+               }
            ],
            "other": [
                {
                    "url": "<full image url>",
                    "name": "<human readable name>"
-               },
-               ...
+               }
            ]
        }
 
