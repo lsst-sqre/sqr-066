@@ -41,7 +41,7 @@ with Diagram(
 
         with Cluster("JupyterHub"):
             jupyterproxy = KubernetesEngine("JupyterHub proxy")
-            jupyterhub = KubernetesEngine("JupyterHub\nw/APISpawner")
+            jupyterhub = KubernetesEngine("JupyterHub\nw/RESTSpawner")
             jupyterhub_token = Secret("JupyterHub token")
 
         with Cluster("Spawner"):
@@ -49,11 +49,11 @@ with Diagram(
             image_puller = ReplicaSet("Image prepuller")
 
         with Cluster("User namespace"):
-            namespace = Namespace("User")
-            pod = Pod("Lab pod")
-            configmap = ConfigMap("Lab configuration")
-            token = Secret("User notebook token")
-            secrets = Secret("Other lab secrets")
+            namespace = Namespace("nublado-username")
+            pod = Pod("nb-username")
+            configmap_env = ConfigMap("nb-username-env")
+            configmap_nss = ConfigMap("nb-username-nss")
+            secrets = Secret("nb-username")
 
     user >> ingress >> jupyterproxy >> jupyterhub
     ingress >> gafaelfawr
@@ -63,4 +63,4 @@ with Diagram(
     spawner >> image_puller
     jupyterproxy >> pod
     spawner >> namespace
-    namespace - [configmap, token, secrets] - pod
+    namespace - [configmap_env, configmap_nss, secrets] - pod
