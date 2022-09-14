@@ -7,16 +7,14 @@
   .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.#####.svg
      :target: http://dx.doi.org/10.5281/zenodo.#####
 
-###################################################
-Proposal for separate RSP User Lab Spawning Service
-###################################################
+##################################
+RSP Notebook Aspect spawner design
+##################################
 
 SQR-066
 =======
 
-JupyterHub-plus-KubeSpawner, when used in an environment with per-user namespaces, requires a terrifying amount of privilege.  We propose moving the actual creation-of-arbitrary-objects-in-a-K8s-cluster piece of JupyterHub's job to its own service, which can be substantially simpler and present a much reduced attack surface.  Conceptually the proposed spawner service would look much like Moneypenny (and indeed Moneypenny's functionality could probably be rolled into it).  The same spawner could also be used to create Dask objects in the user's namespace.
-
-In addition to the service itself, it would be necessary to write adaptor libraries for (at least) JupyterHub and Dask.  For JupyterHub this would implement a Spawner interface, but the mechanism by which the Spawner did its thing would simply be making web calls to the Spawning Service.  A similar approach could be used for Dask, to replace the Kubernetes calls to create Dask pods and services with HTTP calls to the Spawning Service.
+Proposes a design for spawning Notebook Aspect lab pods via a separate authenticated web service rather than internally in JupyterHub. This permits a significant reduction in the required privileges of JupyterHub and provides a simpler way to add local policy controls and custom spawner menus.
 
 **Links:**
 

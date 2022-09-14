@@ -13,11 +13,12 @@ serial_number: "066"
 doc_id: "SQR-066"
 
 # Title of the document, without the series/serial designation
-doc_title: "Proposal for separate RSP User Lab Spawning Service"
+doc_title: "RSP Notebook Aspect spawner design"
 
 # Author names, ordered as a list. Each author name should be formatted as 'First Last'
 authors:
   - "Adam Thornton"
+  - "Russ Allbery"
 
 # Current document revision date, YYYY-MM-DD
 # Only set this field if you need to manually fix the revision date;
@@ -34,19 +35,37 @@ authors:
 # doi: 10.5281/zenodo.#####
 
 # Copyright statement
-copyright: "2022, Association of Universities for Research in Astronomy, Inc. (AURA)"
+copyright: >-
+  2022, Association of Universities for Research in Astronomy, Inc. (AURA)
 
 # Description. A short, 1-2 sentence statemement used by document indices.
-description: "JupyterHub-plus-KubeSpawner, when used in an environment with per-user namespaces, requires a terrifying amount of privilege.  We propose moving the actual creation-of-arbitrary-objects-in-a-K8s-cluster piece of JupyterHub's job to its own service, which can be substantially simpler and present a much reduced attack surface.  Conceptually the proposed spawner service would look much like Moneypenny (and indeed Moneypenny's functionality could probably be rolled into it).  The same spawner could also be used to create Dask objects in the user's namespace.
-
-In addition to the service itself, it would be necessary to write adaptor libraries for (at least) JupyterHub and Dask.  For JupyterHub this would implement a Spawner interface, but the mechanism by which the Spawner did its thing would simply be making web calls to the Spawning Service.  A similar approach could be used for Dask, to replace the Kubernetes calls to create Dask pods and services with HTTP calls to the Spawning Service."
+description: >-
+  Proposes a design for spawning Notebook Aspect lab pods via a separate
+  authenticated web service rather than internally in JupyterHub. This permits
+  a significant reduction in the required privileges of JupyterHub and
+  provides a simpler way to add local policy controls and custom spawner
+  menus.
 
 # Abstract, if available
-# abstract: >
-#           Write your paragraph
-#           here with multiple lines.
-#
-#           You can have multiple paragraphs too.
+abstract: >
+  The Notebook Aspect of the Rubin Science Platform is built on top of
+  JupyterHub and JupyterLab, running inside Kubernetes. The Science Platform
+  must spawn Kubernetes pods and associated resources for users on request,
+  maintain internal state for which pods are running so that the user is
+  directed to their existing pod if present, and shut down pods when
+  requested, either by the user or the system. Spawning a pod may also require
+  privileged setup actions, such as creating a home directory for the user.
+
+  JupyterHub provides a Kubernetes spawner that can be used for this purpose,
+  but it requires granting extensive Kubernetes permissions directly to
+  JupyterHub, a complex piece of software that is directly exposed to user
+  requests. This tech note proposes an alternative design using a JupyterHub
+  spawner that delegates all of its work to a RESTful web service, and an
+  implementation of that web service that performs the spawning along with
+  associated Science Platform business logic such as user home directory
+  creation and construction of the spawner options form. This same approach
+  can be used for a custom Dask spawner for parallel computation within the
+  Science Platform.
 
 # URL where this document is published by Read the Docs. e.g. http://sqr-001.lsst.codes
 url: "https://sqr-066.lsst.io"
