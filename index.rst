@@ -103,7 +103,7 @@ The spawner service can then impose any necessary restrictions, checks, and veri
 Only the spawner service itself will have permissions on the Kubernetes cluster.
 It will be smaller, simpler code audited by Rubin Observatory with a very limited API exposed to users.
 
-Inside JupyterHub, we would replace the ``KubeSpawner`` class with an ``APISpawner`` class whose implementation of all of the spawner methods is to make a web service call to the spawner service.
+Inside JupyterHub, we would replace the ``KubeSpawner`` class with a ``RESTSpawner`` class whose implementation of all of the spawner methods is to make a web service call to the spawner service.
 We can use the user's own credentials to authenticate the spawn call to the spawner service, which ensures that a compromised JupyterHub cannot spawn pods as arbitrary users.
 Other calls can be authenticated with JupyterHub's own token, since they may not be associated with a user request.
 
