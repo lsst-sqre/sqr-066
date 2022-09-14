@@ -1,7 +1,5 @@
 :tocdepth: 1
 
-.. sectnum::
-
 Abstract
 ========
 
