@@ -142,10 +142,10 @@ The ``POST /spawner/v1/labs/<username>/spawn`` route will request a delegated no
 
 .. _DMTN-224: https://dmtn-224.lsst.io/
 
-The ``admin:jupyterhub`` scope is a new scope granted only to the JupyterHub pod itself.
+The ``admin:notebook`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
 It controls access to APIs that only JupyterHub needs to use.
-The ``admin:notebook`` scope is a new scope granted to platform administrators.
-Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:notebook``, but the latter scope can also spawn labs for arbitrary users.
+
+If Science Platform administrators need to test pod spawning or see the event stream directly, they should use user impersonation (creating a token with the identity of the user that they're debugging).
 
 ``GET /spawner/v1/labs``
     Returns a list of all users with running labs.
@@ -155,7 +155,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
 
        ["adam", "rra"]
 
-    Credential scopes required: ``admin:jupyterhub`` or ``admin:notebook``
+    Credential scopes required: ``admin:notebook``
 
 ``GET /spawner/v1/labs/<username>``
     Returns status of the lab pod for the given user, or 404 if that user has no running or starting lab.
@@ -169,7 +169,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
            "pod": "missing",
            "options": {
                "debug": false,
-               "image": "sciplat/sciplat-lab:w_2022_37",
+               "image": "lsstsqre/sciplat-lab:w_2022_37",
                "reset_user_env": false,
                "size": "large"
            },
@@ -208,8 +208,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
 
     If spawning a lab for that user was attempted but failed, the record of that failure is retained with a ``failed`` status and its events (see the ``GET /spawner/v1/labs/<username>/events`` route description) will continue to be available until lab creation is attempted again for that user or the spawner service restarts or garbage-collects old information.
 
-    Credential scopes required: ``exec:notebook``, ``admin:jupyterlab``, or ``admin:notebook``.
-    The latter two scopes are required to see information about any lab other than one's own.
+    Credential scopes required: ``admin:jupyterlab``
 
 ``POST /spawner/v1/labs/<username>/spawn``
     Create a new lab pod for a given user.
@@ -247,8 +246,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
     If a lab exists in the ``failed`` status, a new lab can be created for that user, and the old failure information from the previous lab will be discarded.
     When creating a new lab when one exists in ``failed`` status, if ``pod`` is ``present``, the spawner will attempt again to remove the old pod first.
 
-    Credential scopes required: ``exec:notebook`` or ``admin:notebook``.
-    The latter scope is required to create a lab for a different user.
+    Credential scopes required: ``exec:notebook``
     JupyterHub cannot create labs for arbitrary users without using a delegated token from that user.
 
 ``GET /spawner/v1/labs/<username>/events``
@@ -286,8 +284,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
     Calling ``POST /spawner/v1/labs/<username>/spawn`` or ``DELETE /spawner/v1/labs/<username>`` clears the previous saved event stream and starts a new event stream for that operation.
     Only one operation can be in progress at a time, and the event stream only represents the current operation.
 
-    Credential scopes required: ``exec:notebook``, ``admin:jupyterhub``, or ``admin:notebook``.
-    The latter scopes are required to see information about any lab other than one's own.
+    Credential scopes required: ``exec:notebook``
 
 ``DELETE /spawner/v1/labs/<username>``
     Stop a running pod.
@@ -299,8 +296,7 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
     If termination is successful, the resource is removed.
     If termination is unsuccessful, the lab is put into a ``failed`` state and retained for error reporting.
 
-    Credential scopes required: ``exec:notebook``, ``admin:jupyterhub``, or ``admin:notebook``.
-    The latter scopes are required to delete a lab other than one's own.
+    Credential scopes required: ``admin:notebook``
     JupyterHub can delete labs without having the user's credentials available, since this may be required to clean up state after an unclean restart of the service.
 
 ``GET /spawner/v1/spawn-form/<username>``
@@ -311,14 +307,14 @@ Everything accessible to ``admin:jupyterhub`` is also accessible to ``admin:note
     It will define a form whose elements correspond to the keys of the ``options`` parameter to the ``POST /spawner/v1/labs/<username>/spawn`` call used to create a new lab.
     Each parameter should be single-valued.
 
-    Credential scopes required: ``exec:notebook`` or ``admin:notebook``.
-    JupyterHub cannot retrieve the spawn form for arbitrary users, only for the user for whom it has a delegated token.
+    Credential scopes required: ``exec:notebook``
+    JupyterHub cannot retrieve the spawn form for arbitrary users, only for the user for whom it has a delegated token, since the identity of the token may be used to determine what options are available.
 
 The API to spawn Dask pods is not yet defined in detail, but will look very similar to the above API, except that it will use a resource nested under the lab.
 For example, ``/spawner/v1/labs/<username>/dask-pool/<name>``.
 
-JupyterHub spawner API
-======================
+JupyterHub spawner class
+========================
 
 As discussed above, using a separate spawner service requires replacing Kubespawner with a new spawner implementation.
 Some of the required details will not be obvious until we try to implement it, but here is a sketch of how the required spawner methods can be implemented.
@@ -397,7 +393,7 @@ The namespace will be called ``nublado-<username>``.
 
 When shutting down a lab, first the pod will be stopped and then the namespace will be deleted, cleaning up all other resources.
 
-Resources in the namespace will be prefixed with ``nb-<username>``.
+Resources in the namespace will be prefixed with ``nb-<username>-``.
 This allows for easier sorting in management displays such as Argo CD.
 
 UID and GIDs
@@ -443,7 +439,7 @@ The base ``/etc/passwd`` and ``/etc/group`` files are whatever minimal files are
 
 ``/etc/passwd`` as mounted in the container has one added entry for the user.
 Their name, UID, and primary GID are taken from the user identity information associated with their token.
-The home directory is always ``/home/<username>`` and their shell is always ``/bin/bash``.
+The home directory is always ``/home/<username>`` and the shell is always ``/bin/bash``.
 
 ``/etc/group`` as mounted in the container has an entry for each group in the user's group membership that has an associated GID.
 Groups without GIDs cannot be meaningfully represented in the ``/etc/group`` structure and are ignored.
@@ -453,6 +449,12 @@ No ``/etc/shadow`` or ``/etc/gshadow`` files are mounted in the pod.
 The pod is always executed as the intended user and PAM should not be used or needed, so nothing should need or be able to read those files.
 
 The ``/etc/passwd`` and ``/etc/group`` files will be stored under ``passwd`` and ``group`` keys in a ``ConfigMap`` named ``nb-<username>-nss`` (from Name Service Switch, the name of the Linux subsystem that provides this type of user and group information), and mounted via the ``Pod`` specification.
+
+Mounts
+------
+
+The necessary volume mounts for a lab pod will be specified in the Helm configuration of the spawner service.
+At the least, this will include a mount definition for ``/home``, where user home directories must be located inside the pod.
 
 Secrets
 -------
@@ -506,3 +508,173 @@ Therefore, any configured init container must be idempotent and safe to run repe
 
 Decommissioning containers (for when a user is deleted) are not part of this specification and will not be supported initially.
 We may add them later if we discover a need.
+
+Prepulling
+==========
+
+The spawner service will also handle prepulling selected images onto all nodes in the cluster so that spawning labs for the Notebook Aspect will be faster.
+It does this by using the Kubernetes API to ask each node what images it has cached, and then spawning a ``DaemonSet`` as needed to cache any images that are missing.
+
+Configuration
+-------------
+
+Prepulling is configured via the Helm chart for the spawner service.
+The prepuller configuration also serves as configuration for the image selection portion of the lab spawner form, since it controls what images are listed for selection outside of the dropdown menu of all available tags.
+
+An example of a prepuller configuration:
+
+.. code-block:: yaml
+
+   prepull:
+     - name: jupyter
+       type: rubin
+       registry: registry.hub.docker.com
+       docker:
+         repository: lsstsqre/sciplat-lab
+       recommendedTag: recommended
+       numReleases: 1
+       numWeeklies: 2
+       numDailies: 3
+
+The ``name`` field says that ``jupyter`` is the name of this prepuller configuration.
+This is the name used in the ``/spawner/v1/prepulls/<name>`` routes in the REST API to inspect the prepulling status.
+
+This configuration pulls a group of images from the ``lsstsqre/sciplat-lab`` Docker image repository at registry.hub.docker.com that follow the tag conventions documented in SQR-059_.
+The latest release, the latest two weeklies, and the latest three dailies will be prepulled.
+Whatever image has the tag ``recommended`` will appear as the first and default selected image.
+
+.. _SQR-059: https://sqr-059.lsst.io/
+
+Another example that uses Google Artifact Repository and explicitly pulls an image regardless of its recency:
+
+.. code-block:: yaml
+
+   prepull:
+     - name: jupyter
+       type: rubin-gar
+       registry: us-central1-docker.pkg.dev
+       gar:
+         repository: sciplat
+         image: sciplat-lab
+         projectId: rubin-shared-services-71ec
+         location: us-central1
+       recommendedTag: recommended
+       numReleases: 1
+       numWeeklies: 2
+       numDailies: 3
+     - name: recommended
+       type: simple
+       images:
+         - url: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
+           name: "Weekly 2022_22"
+
+This uses Google Artifact Registry as the source of containers instead of a Docker image repository compatible with the Docker Hub protocol.
+It also has a second stanza that ensures that a specific named image is always pulled, regardless of whether it is one of the latest releases, weeklies, or dailies.
+
+Finally, here is an example for a Telescope and Site deployment that limits available images to those that implement a specific cycle:
+
+.. code-block:: yaml
+
+   prepull:
+     - name: jupyter
+       type: rubin
+       registry: ts-dockerhub.lsst.org
+       docker:
+         repository: sal-sciplat-lab
+       recommendedTag: recommended_c0026
+       numReleases: 0
+       numWeeklies: 3
+       numDailies: 2
+       cycle: 26
+       aliasTags:
+         - latest
+         - latest_daily
+         - latest_weekly
+
+This is very similar to the first example but adds a ``cycle`` option that limits available images to those implementing that cycle.
+It also includes an ``aliasTags`` option that lists tags that should be treated as aliases of other tags, rather than possible useful images in their own right.
+
+REST API
+--------
+
+To facilitate debugging of prepuller issues, there is a read-only REST API to see the status of a prepull configuration.
+Changing the configuration requires changing the Helm chart or the generated ``ConfigMap`` object and restarting the spawner service.
+
+All of these API calls require ``admin:notebook`` scope.
+
+``GET /spawner/v1/prepulls``
+    Returns status of the known prepull configurations.
+    The response is a JSON object with two keys.
+
+    The first key is ``configs``, which contains a list of prepull configurations.
+    These is nearly identical to the configuration blocks given above, converted to JSON, but one additional field in each configuration:
+
+    .. code-block:: json
+
+       "images": {
+           "prepulled": [
+               {
+                   "url": "<full image url>",
+                   "name": "<human readable name>",
+                   "hash": "<image hash>",
+                   "nodes": ["<node>", "<node>"]
+               },
+               ...
+           ],
+           "pending": [
+               {
+                   "url": "<full image url>",
+                   "name": "<human readable name>"
+                   "hash": "<image hash>",
+                   "nodes": ["<node>", "<node>"],
+                   "missing": ["<node>", "<node>"]
+               },
+               ...
+           ],
+           "other": [
+               {
+                   "url": "<full image url>",
+                   "name": "<human readable name>"
+               },
+               ...
+           ]
+       }
+
+    ``prepulled`` lists the images that the spawner believes have been successfully prepulled to every node based on this prepull configuration.
+    ``pending`` lists the ones that still need to be prepulled.
+    ``other`` lists the other tags for the prepulled repository that are not being prepulled based on the configuration.
+
+    For each image, ``nodes`` contains a list of the nodes to which that image has been prepulled, and ``missing`` contains a list of the nodes that should have that image but do not.
+
+    The second key is ``nodes``, which contains a list of nodes.
+    Each node has the following structure:
+
+    .. code-block:: json
+
+       {
+           "name": "<name>",
+           "eligible": true,
+           "comment": "<why ineligible>",
+           "cached": ["<image>", "<image>"]
+       }
+
+    ``eligible`` is a boolean saying whether this node is eligible for prepulling.
+    If it is false, the reason for its ineligibility will be given in ``comment``; otherwise, ``comment`` will be missing.
+    ``cached`` is a list of image URLs that are cached on that node.
+
+Future work
+===========
+
+- The API and Python implementation for Dask spawning has not yet been designed.
+  This will require new routes for spawning and deleting Dask pods under the route for the user's lab, and a way to get configuration information such as the user's quota of Dask pods or the CPU and memory quotas of each pod.
+  All Dask pods should be automatically deleted when the user's lab is deleted.
+
+- The spawner should also support launching privileged pods for administrative maintenance outside of the Notebook Aspect.
+  This will require a new API protected by a different scope, not ``admin:notebook``, since JupyterHub should not have access to spawn such pods.
+
+- A more detailed specification of the configuration for provisioning init containers should be added, either here or (preferrably) in operational documentation once this spawner service has been implemented.
+
+- The routes to return information about pods and prepull configurations are likely to need more detail.
+  The draft REST API specifications in this document should be moved into code and replaced with documentation generated by OpenAPI, similar to what was done for Gafaelfawr_.
+
+.. _Gafaelfawr: https://gafaelfawr.lsst.io/
