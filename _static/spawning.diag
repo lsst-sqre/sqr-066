@@ -7,7 +7,7 @@ seqdiag {
     browser <-- jupyterhub [label = "spawn page"];
 
     browser -> jupyterhub [note = "POST /nb/hub/spawn"];
-        jupyterhub -> spawner [note = "PUT labs/<username>"];
+        jupyterhub -> spawner [note = "POST labs/<username>/spawn"];
             spawner => kubernetes [label = "create resources"];
             spawner => kubernetes [label = "create pod"];
         jupyterhub <-- spawner;
