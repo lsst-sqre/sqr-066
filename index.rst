@@ -306,6 +306,16 @@ If Science Platform administrators need to test pod spawning or see the event st
     Credential scopes required: ``exec:notebook``
     JupyterHub cannot retrieve the spawn form for arbitrary users, only for the user for whom it has a delegated token, since the identity of the token may be used to determine what options are available.
 
+``GET /spawner/v1/user-status``
+    Get the pod status for the authenticating user.
+    If the user does not have a pod, returns 404.
+
+    This is identical to the ``GET /spawner/v1/labs/<username>`` route except that it only requires the ``exec:notebook`` scope, so users can use it, and the username is implicitly the calling user.
+    It allows a user to obtain status information for their own pod and may be used under the hood by the top-level UI for the Science Platform.
+    (For example, the UI may change the Notebook Aspect portion of the page to indicate the user already has a running lab they can reconnect to, rather than indicating that the user can spawn a new lab.)
+
+    Credential scopes required: ``exec:notebook``
+
 The API to spawn Dask pods is not yet defined in detail, but will look very similar to the above API, except that it will use a resource nested under the lab.
 For example, ``/spawner/v1/labs/<username>/dask-pool/<name>``.
 
