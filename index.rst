@@ -671,6 +671,48 @@ All of these API calls require ``admin:notebook`` scope.
     If it is false, the reason for its ineligibility will be given in ``comment``; otherwise, ``comment`` will be missing.
     ``cached`` is a list of image URLs that are cached on that node.
 
+Scaling
+=======
+
+In the first version, there will be a single instance of the spawner service, which will manage its operations in memory.
+If the spawner crashes or is restarted, any operations in progress will be aborted in their current state, and we will rely on JupyterHub cleaning up when the spawn is retried.
+
+However, in the longer term, to support future scaling of the Science Platform and to avoid unnecessary outages during upgrades, we want the option of running multiple spawner pods.
+This means that spawn requests may start on one spawner pod and then continue on a different spawner pod.
+
+Described here is a possible architecture to implement this, which we would tackle as subsequent work after the initial working version of the spawner.
+
+Storage
+-------
+
+The spawn specification for a pod and the event stream for pod creation and deletion may be requested from any instance of the spawner.
+Spawners must therefore share that data, which implies some storage backend.
+
+Redis seems ideal for this type of storage.
+The spawn specification can be stored in a per-user Redis key.
+A `Redis stream <https://redis.io/docs/data-types/streams/>`__ looks like the perfect data structure for storing events.
+
+Each spawn in progress (or delete in progress) needs one and only one instance of the spawner to monitor its progress and update the information in Redis.
+We can use `aioredlock <https://github.com/joanvila/aioredlock>`__ to manage a lock for each user, which will be taken by an instance of the spawner that is managing an operation for that user but will be released if that instance of the spawner crashes.
+
+Restarting
+----------
+
+If the spawner managing an operation for a user exits, another spawner has to pick up that operation and manage it, including monitoring Kubernetes for events and adding them to the event stream and updating the status once the spawn has completed.
+To achieve that:
+
+- Store a flag in Redis indicating whether an operation for a given user is in progress.
+  Create this flag when starting to manage an operation, and delete it when the operation is complete.
+
+- On startup, and on some interval, look for all instances of that flag in Redis.
+  For each, check to see if that user is already locked.
+  If not, acquire the lock and start managing the operation.
+  This will require examining Kubernetes to determine the status of the operation (for example, resources may be only partly created), and then resuming any Kubernetes watches.
+
+- Refresh the lock periodically as long as the instance is still running and managing an operation for that user.
+
+If the instance managing an operation crashes, the lock will eventually time out, and the next instance to poll for pending unmanaged operations will locate that operation and resume it.
+
 Future work
 ===========
 
