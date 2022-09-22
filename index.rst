@@ -483,6 +483,13 @@ The secrets will be copied into the created ``Secret`` object during pod spawn.
 
 One of those secrets may be tagged as a pull secret, in which case the required configuration to use it as a pull secret will also be added to the ``Pod`` specification.
 
+``NetworkPolicy``
+-----------------
+
+Prevention of direct connections from notebooks to other cluster services should be prevented by the ``NetworkPolicy`` resources for those services.
+However, for defense in depth, we will also install a ``NetworkPolicy`` for each lab pod.
+This will restrict ingress to the JupyterHub proxy and, if necessary, the hub, and restrict egress to only external IP addresses plus the proxy, hub, and any Dask management interface that we may choose to spawn as a separate pod.
+
 Argo CD support
 ---------------
 

@@ -7,6 +7,7 @@ from diagrams.gcp.compute import KubernetesEngine
 from diagrams.gcp.network import LoadBalancing
 from diagrams.k8s.compute import Deployment, Pod, ReplicaSet
 from diagrams.k8s.group import Namespace
+from diagrams.k8s.network import NetworkPolicy
 from diagrams.k8s.podconfig import ConfigMap, Secret
 from diagrams.onprem.client import User
 
@@ -54,6 +55,7 @@ with Diagram(
             configmap_env = ConfigMap("nb-username-env")
             configmap_nss = ConfigMap("nb-username-nss")
             secrets = Secret("nb-username")
+            netpol = NetworkPolicy("nb-username")
 
     user >> ingress >> jupyterproxy >> jupyterhub
     ingress >> gafaelfawr
@@ -63,4 +65,4 @@ with Diagram(
     spawner >> image_puller
     jupyterproxy >> pod
     spawner >> namespace
-    namespace - [configmap_env, configmap_nss, secrets] - pod
+    namespace - [configmap_env, configmap_nss, netpol, secrets] - pod
