@@ -65,7 +65,7 @@ We've encountered several problems with this approach over the past year.
 
 - Allowing JupyterHub itself to create the pods requires granting extensive Kubernetes permissions to JupyterHub, including full access to create and execute arbitrary code inside pods, full access to secrets, and full access to roles and role bindings.
   Worse, because each user is isolated in their own namespace, JupyterHub has to have those permissions globally for the entire Kubernetes cluster.
-  While JupyterHub itself is a privileged component of the Science Platform, it's a complex, user-facing component and good privilege isolation practices argue against granting it that broad of permissions.
+  While JupyterHub itself is a privileged component of the Science Platform, it's a complex, user-facing component and good privilege isolation practices argue against granting it such a broad set of permissions.
   A compromise of JupyterHub currently means a complete compromise of the Kubernetes cluster and all of its secrets.
 
 - Creation of the additional Kubernetes resources via hooks is complex and has been error-prone.
@@ -370,7 +370,7 @@ The spawner implementation will assume that the ``token`` element of the authent
     ``html_message`` is optional and is used when rendering the message on a web page.
 
     This doesn't exactly match the event stream provided by the lab controller.
-    To convert, keep the last reported progress amount and update it when a ``progress`` event is received, without emiting a new event.
+    To convert, keep the last reported progress amount and update it when a ``progress`` event is received, without emitting a new event.
     Then add an event with the last-seen progress for any ``info`` or ``error`` events.
     Set internal state indicating that the operation is complete and then add a final event (with a progress of 100) upon seeing a ``complete`` or ``failure`` event.
 
@@ -436,11 +436,12 @@ The promise is that, regardless of what the lab creation form looks like or what
     The tag of the image to spawn.
     The repository and image name are given by the image configuration and cannot be changed here.
     Either this or ``image_type`` must be set.
+    If both are set, ``image_tag`` takes precedence.
 
 ``size``
     The size of image to create.
     This controls resource requests and limits on the created pod.
-    May be one of ``small``, ``medium``, ``large``, or ``huge``.
+    May be one of ``small``, ``medium``, or ``large``.
     The definitions of those sizes is determined by lab controller configuration.
 
 The lab form returned by the ``GET /spawner/v1/lab-form/<user>`` route may use some of these same parameters or may use completely different parameters.
@@ -532,12 +533,14 @@ The secrets will be copied into the created ``Secret`` object during pod creatio
 
 One of those secrets may be tagged as a pull secret, in which case the required configuration to use it as a pull secret will also be added to the ``Pod`` specification.
 
-``NetworkPolicy``
------------------
+Network policy
+--------------
 
 Prevention of direct connections from notebooks to other cluster services should be handled by the ``NetworkPolicy`` resources for those services.
 However, for defense in depth, we will also install a ``NetworkPolicy`` for each lab pod.
-This will restrict ingress to the JupyterHub proxy and, if necessary, the hub, and restrict egress to only external IP addresses plus the proxy, hub, and any Dask management interface that we may choose to create as a separate pod.
+This will restrict ingress to the JupyterHub proxy and, if necessary, the hub, and restrict egress to only non-cluster IP addresses plus the proxy, hub, and any Dask management interface that we may choose to create as a separate pod.
+
+Non-cluster IP addresses may need to include other services outside of the Kubernetes cluster but still on private IP addresses, such as NFS servers, database servers, or object store endpoints.
 
 Resource quotas
 ---------------
@@ -822,7 +825,7 @@ Future work
 - The lab controller should also support launching privileged pods for administrative maintenance outside of the Notebook Aspect.
   This will require a new API protected by a different scope, not ``admin:notebook``, since JupyterHub should not have access to create such pods.
 
-- A more detailed specification of the configuration for provisioning init containers should be added, either here or (preferrably) in operational documentation once this lab controller has been implemented.
+- A more detailed specification of the configuration for provisioning init containers should be added, either here or (preferably) in operational documentation once this lab controller has been implemented.
 
 - The routes to return information about pods and prepull configurations are likely to need more detail.
   The draft REST API specifications in this document should be moved into code and replaced with documentation generated by OpenAPI, similar to what was done for Gafaelfawr_.
