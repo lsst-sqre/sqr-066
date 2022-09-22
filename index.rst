@@ -639,6 +639,47 @@ Changing the configuration requires changing the Helm chart or the generated ``C
 
 All of these API calls require ``admin:notebook`` scope.
 
+``GET /spawner/v1/images``
+    Returns a list of known images and their names.
+    This parses the available images according to SQR-059_ and shows the results:
+
+    .. code-block:: json
+
+       {
+           "recommended": {
+               "url": "<full image url>",
+               "tag": "<image tag>",
+               "name": "<human readable name>",
+               "prepulled": true
+           },
+           "latest-weekly": {
+               "url": "<full image url>",
+               "tag": "<image tag>",
+               "name": "<human readable name>",
+               "prepulled": true
+           },
+           "latest-daily": {
+               "url": "<full image url>",
+               "tag": "<image tag>",
+               "name": "<human readable name>",
+               "prepulled": true
+           },
+           "latest-release": {
+               "url": "<full image url>",
+               "tag": "<image tag>",
+               "name": "<human readable name>",
+               "prepulled": true
+           },
+           "all": [
+               {
+                   "url": "<full image url>",
+                   "tag": "<image tag>",
+                   "name": "<human readable name>",
+                   "prepulled": false
+               }
+           ]
+       }
+
 ``GET /spawner/v1/prepulls``
     Returns status of the known prepull configurations.
     The response is a JSON object with two keys.
