@@ -7,14 +7,15 @@
   .. image:: https://zenodo.org/badge/doi/10.5281/zenodo.#####.svg
      :target: http://dx.doi.org/10.5281/zenodo.#####
 
-##################################
-RSP Notebook Aspect spawner design
-##################################
+#########################################
+RSP Notebook Aspect lab controller design
+#########################################
 
 SQR-066
 =======
 
-Proposes a design for spawning Notebook Aspect lab pods via a separate authenticated web service rather than internally in JupyterHub. This permits a significant reduction in the required privileges of JupyterHub and provides a simpler way to add local policy controls and custom spawner menus.
+Proposes a design for creating Notebook Aspect lab pods via a separate authenticated web service rather than internally in JupyterHub.
+This permits a significant reduction in the required privileges of JupyterHub and provides a simpler way to add local policy controls and custom lab creation menus.
 
 **Links:**
 

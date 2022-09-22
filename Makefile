@@ -31,7 +31,7 @@ help:
 clean:
 	rm -rf $(BUILDDIR)/*
 
-images: _static/architecture.png _static/spawning.svg
+images: _static/architecture.png _static/creation.svg
 
 %.png: %.py
 	python $<

@@ -45,8 +45,8 @@ with Diagram(
             jupyterhub = KubernetesEngine("JupyterHub\nw/RESTSpawner")
             jupyterhub_token = Secret("JupyterHub token")
 
-        with Cluster("Spawner"):
-            spawner = KubernetesEngine("Spawner")
+        with Cluster("Lab controller"):
+            controller = KubernetesEngine("Web service")
             image_puller = ReplicaSet("Image prepuller")
 
         with Cluster("User namespace"):
@@ -60,9 +60,9 @@ with Diagram(
     user >> ingress >> jupyterproxy >> jupyterhub
     ingress >> gafaelfawr
     jupyterhub << jupyterhub_token
-    jupyterhub >> spawner
-    gafaelfawr << spawner
-    spawner >> image_puller
+    jupyterhub >> controller
+    gafaelfawr << controller
+    controller >> image_puller
     jupyterproxy >> pod
-    spawner >> namespace
+    controller >> namespace
     namespace - [configmap_env, configmap_nss, netpol, secrets] - pod

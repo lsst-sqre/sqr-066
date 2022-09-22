@@ -13,7 +13,7 @@ serial_number: "066"
 doc_id: "SQR-066"
 
 # Title of the document, without the series/serial designation
-doc_title: "RSP Notebook Aspect spawner design"
+doc_title: "RSP Notebook Aspect lab controller design"
 
 # Author names, ordered as a list. Each author name should be formatted as 'First Last'
 authors:
@@ -40,17 +40,17 @@ copyright: >-
 
 # Description. A short, 1-2 sentence statemement used by document indices.
 description: >-
-  Proposes a design for spawning Notebook Aspect lab pods via a separate
+  Proposes a design for creating Notebook Aspect lab pods via a separate
   authenticated web service rather than internally in JupyterHub. This permits
   a significant reduction in the required privileges of JupyterHub and
-  provides a simpler way to add local policy controls and custom spawner
+  provides a simpler way to add local policy controls and custom lab creation
   menus.
 
 # Abstract, if available
 abstract: >
   The Notebook Aspect of the Rubin Science Platform is built on top of
   JupyterHub and JupyterLab, running inside Kubernetes. The Science Platform
-  must spawn Kubernetes pods and associated resources for users on request,
+  must create Kubernetes pods and associated resources for users on request,
   maintain internal state for which pods are running so that the user is
   directed to their existing pod if present, and shut down pods when
   requested, either by the user or the system. Spawning a pod may also require
@@ -59,13 +59,14 @@ abstract: >
   JupyterHub provides a Kubernetes spawner that can be used for this purpose,
   but it requires granting extensive Kubernetes permissions directly to
   JupyterHub, a complex piece of software that is directly exposed to user
-  requests. This tech note proposes an alternative design using a JupyterHub
-  spawner that delegates all of its work to a RESTful web service, and an
-  implementation of that web service that performs the spawning along with
-  associated Science Platform business logic such as user home directory
-  creation and construction of the spawner options form. This same approach
-  can be used for a custom Dask spawner for parallel computation within the
-  Science Platform.
+  requests.  This tech note proposes an alternative design using a JupyterHub
+  spawner implementation that delegates all of its work to a RESTful web
+  service.  That service would act as a Kubernetes controller, managing user
+  labs and associated Kubernetes resources, as well as associated Science
+  Platform business logic such as user home directory creation, construction
+  of the lab options form, and image pre-pulling.  This same approach can be
+  used for creating Dask pods for parallel computation within the Science
+  Platform.
 
 # URL where this document is published by Read the Docs. e.g. http://sqr-001.lsst.codes
 url: "https://sqr-066.lsst.io"
