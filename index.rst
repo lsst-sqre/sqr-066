@@ -407,6 +407,45 @@ Quotas are set as appropriate in the lab controller based on metadata about the 
 Similarly, the ``cmd`` and ``args`` configuration parameters to the spawner are ignored.
 The lab controller will always start the JupyterLab single-user server.
 
+Labs for bot users
+==================
+
+In several cases, we want a service to be able to create a lab for a bot user.
+One example is mobu_, which performs actions typical of a Science Platform user to look for errors or other problems.
+Another example is `Times Square`_ (also see SQR-062_), which uses labs to render notebooks.
+
+.. _mobu: https://github.com/lsst-sqre/mobu
+.. _Times Square: https://github.com/lsst-sqre/times-square
+.. _SQR-062: https://sqr-062.lsst.io/
+
+One option would be to allow such services to talk to the lab controller directly, bypassing the complex JupyterHub layer that doesn't have a clean API for creating a lab.
+However, the individual labs default to using JupyterHub's OpenID Connect server for authentication and assume they can talk to a hub for other purposes (idle culling, max age culling, etc.).
+mobu also wants to simulate what a user would do, and users create their labs via JupyterHub.
+
+Instead, we will standardize on some supported options for the JupyterHub lab spawn endpoint (``POST /nb/hub/spawn``).
+These options are sent, with only minor transformation by the spawner class, to the lab controller via ``POST /spawner/v1/labs/<username>/create`` in the ``options`` key, so this amounts to a guarantee about what options are recognized.
+The promise is that, regardless of what the lab creation form looks like or what parameters will be submitted by a normal user interaction with the JupyterHub lab creation page, a ``POST`` request with only the following options will be a supported way to create a lab:
+
+``image_type``
+    May be one of ``recommended``, ``latest-weekly``, ``latest-daily``, or ``latest-release``.
+    The corresponding image, as determined by the rules in SQR-059_, will be used for the lab.
+    See :ref:`Prepulling configuration <prepulling-config>` for more details.
+    Either this or ``image_tag`` must be set.
+
+``image_tag``
+    The tag of the image to spawn.
+    The repository and image name are given by the image configuration and cannot be changed here.
+    Either this or ``image_type`` must be set.
+
+``size``
+    The size of image to create.
+    This controls resource requests and limits on the created pod.
+    May be one of ``small``, ``medium``, ``large``, or ``huge``.
+    The definitions of those sizes is determined by lab controller configuration.
+
+The lab form returned by the ``GET /spawner/v1/lab-form/<user>`` route may use some of these same parameters or may use completely different parameters.
+The only guarantee is that a ``POST`` with only those parameters will suffice for creating a lab for a bot user.
+
 Pod configuration
 =================
 
@@ -552,17 +591,21 @@ Prepulling
 The lab controller will also handle prepulling selected images onto all nodes in the cluster so that creating labs for the Notebook Aspect will be faster.
 It does this by using the Kubernetes API to ask each node what images it has cached, and then creating a ``DaemonSet`` as needed to cache any images that are missing.
 
+.. _prepulling-config:
+
 Configuration
 -------------
 
-Prepulling is configured via the Helm chart for the lab controller.
-The prepuller configuration also serves as configuration for the image selection portion of the lab creation form, since it controls what images are listed for selection outside of the dropdown menu of all available tags.
+The supported images for labs are configured via the Helm chart for the lab controller.
+The configuration of supported images controls what images are listed for selection in the lab creation form.
+It also doubles as the prepuller configuration.
+Only prepulled images (which should spawn within JupyterHub's timeout) will be shown outside of the dropdown menu of all available tags.
 
-An example of a prepuller configuration:
+An example of an image configuration:
 
 .. code-block:: yaml
 
-   prepull:
+   images:
      registry: registry.hub.docker.com
      docker:
        repository: lsstsqre/sciplat-lab
@@ -581,7 +624,7 @@ Another example that uses Google Artifact Repository and explicitly pulls an ima
 
 .. code-block:: yaml
 
-   prepull:
+   images:
      registry: us-central1-docker.pkg.dev
      gar:
        repository: sciplat
@@ -603,7 +646,7 @@ Finally, here is an example for a Telescope and Site deployment that limits avai
 
 .. code-block:: yaml
 
-   prepull:
+   images:
      registry: ts-dockerhub.lsst.org
      docker:
        repository: sal-sciplat-lab
