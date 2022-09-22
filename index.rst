@@ -563,18 +563,13 @@ An example of a prepuller configuration:
 .. code-block:: yaml
 
    prepull:
-     - name: jupyter
-       type: rubin
-       registry: registry.hub.docker.com
-       docker:
-         repository: lsstsqre/sciplat-lab
-       recommendedTag: recommended
-       numReleases: 1
-       numWeeklies: 2
-       numDailies: 3
-
-The ``name`` field says that ``jupyter`` is the name of this prepuller configuration.
-This is the name used in the ``/spawner/v1/prepulls/<name>`` routes in the REST API to inspect the prepulling status.
+     registry: registry.hub.docker.com
+     docker:
+       repository: lsstsqre/sciplat-lab
+     recommendedTag: recommended
+     numReleases: 1
+     numWeeklies: 2
+     numDailies: 3
 
 This configuration pulls a group of images from the ``lsstsqre/sciplat-lab`` Docker image repository at registry.hub.docker.com that follow the tag conventions documented in SQR-059_.
 The latest release, the latest two weeklies, and the latest three dailies will be prepulled.
@@ -587,46 +582,40 @@ Another example that uses Google Artifact Repository and explicitly pulls an ima
 .. code-block:: yaml
 
    prepull:
-     - name: jupyter
-       type: rubin-gar
-       registry: us-central1-docker.pkg.dev
-       gar:
-         repository: sciplat
-         image: sciplat-lab
-         projectId: rubin-shared-services-71ec
-         location: us-central1
-       recommendedTag: recommended
-       numReleases: 1
-       numWeeklies: 2
-       numDailies: 3
-     - name: recommended
-       type: simple
-       images:
-         - url: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
-           name: "Weekly 2022_22"
+     registry: us-central1-docker.pkg.dev
+     gar:
+       repository: sciplat
+       image: sciplat-lab
+       projectId: rubin-shared-services-71ec
+       location: us-central1
+     recommendedTag: recommended
+     numReleases: 1
+     numWeeklies: 2
+     numDailies: 3
+     pin:
+       - url: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
+         name: "Weekly 2022_22"
 
 This uses Google Artifact Registry as the source of containers instead of a Docker image repository compatible with the Docker Hub protocol.
-It also has a second stanza that ensures that a specific named image is always pulled, regardless of whether it is one of the latest releases, weeklies, or dailies.
+It also pins a specific image, ensuring that it is always pulled regardless of whether it is one of the latest releases, weeklies, or dailies.
 
 Finally, here is an example for a Telescope and Site deployment that limits available images to those that implement a specific cycle:
 
 .. code-block:: yaml
 
    prepull:
-     - name: jupyter
-       type: rubin
-       registry: ts-dockerhub.lsst.org
-       docker:
-         repository: sal-sciplat-lab
-       recommendedTag: recommended_c0026
-       numReleases: 0
-       numWeeklies: 3
-       numDailies: 2
-       cycle: 26
-       aliasTags:
-         - latest
-         - latest_daily
-         - latest_weekly
+     registry: ts-dockerhub.lsst.org
+     docker:
+       repository: sal-sciplat-lab
+     recommendedTag: recommended_c0026
+     numReleases: 0
+     numWeeklies: 3
+     numDailies: 2
+     cycle: 26
+     aliasTags:
+       - latest
+       - latest_daily
+       - latest_weekly
 
 This is very similar to the first example but adds a ``cycle`` option that limits available images to those implementing that cycle.
 It also includes an ``aliasTags`` option that lists tags that should be treated as aliases of other tags, rather than possible useful images in their own right.
@@ -682,10 +671,12 @@ All of these API calls require ``admin:notebook`` scope.
 
 ``GET /spawner/v1/prepulls``
     Returns status of the known prepull configurations.
-    The response is a JSON object with two keys.
+    The response is a JSON object with three keys.
 
-    The first key is ``configs``, which contains a list of prepull configurations.
-    These is nearly identical to the configuration blocks given above, converted to JSON, but one additional field in each configuration:
+    The first key is ``config``, which contains the prepull configuration.
+    This is identical to the configuration blocks given above, but converted to JSON.
+
+    The second key is ``images``, which shows the list of images that are being prepulled as follows:
 
     .. code-block:: json
 
@@ -706,22 +697,15 @@ All of these API calls require ``admin:notebook`` scope.
                    "nodes": ["<node>", "<node>"],
                    "missing": ["<node>", "<node>"]
                }
-           ],
-           "other": [
-               {
-                   "url": "<full image url>",
-                   "name": "<human readable name>"
-               }
            ]
        }
 
     ``prepulled`` lists the images that the lab controller believes have been successfully prepulled to every node based on this prepull configuration.
     ``pending`` lists the ones that still need to be prepulled.
-    ``other`` lists the other tags for the prepulled repository that are not being prepulled based on the configuration.
 
     For each image, ``nodes`` contains a list of the nodes to which that image has been prepulled, and ``missing`` contains a list of the nodes that should have that image but do not.
 
-    The second key is ``nodes``, which contains a list of nodes.
+    The third key is ``nodes``, which contains a list of nodes.
     Each node has the following structure:
 
     .. code-block:: json
