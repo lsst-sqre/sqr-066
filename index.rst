@@ -138,7 +138,7 @@ Supporting multiple labs for the same user (something that is supported by Jupyt
 
 This API will be protected by the regular authentication mechanism for the Rubin Science Platform, described in DMTN-224_.
 It will use multiple ingresses to set different authentication requirements for different routes.
-The ``POST /spawner/v1/labs/<username>/create`` route will request a delegated notebook token, which it will provide to the newly-created pod so that the user has authentication credentials inside their lab.
+The ``POST /nublado/spawner/v1/labs/<username>/create`` route will request a delegated notebook token, which it will provide to the newly-created pod so that the user has authentication credentials inside their lab.
 
 .. _DMTN-224: https://dmtn-224.lsst.io/
 
@@ -147,7 +147,7 @@ It controls access to APIs that only JupyterHub needs to use.
 
 If Science Platform administrators need to test pod creation or see the event stream directly, they should use user impersonation (creating a token with the identity of the user that they're debugging).
 
-``GET /spawner/v1/labs``
+``GET /nublado/spawner/v1/labs``
     Returns a list of all users with running labs.
     Example:
 
@@ -157,7 +157,7 @@ If Science Platform administrators need to test pod creation or see the event st
 
     Credential scopes required: ``admin:notebook``
 
-``GET /spawner/v1/labs/<username>``
+``GET /nublado/spawner/v1/labs/<username>``
     Returns status of the lab pod for the given user, or 404 if that user has no running or starting lab.
     Example:
 
@@ -206,20 +206,20 @@ If Science Platform administrators need to test pod creation or see the event st
     (This is relevant primarily for a lab in ``failed`` status.)
 
     If lab creation for that user was attempted but failed, the record of that failure is retained with a ``failed`` status.
-    Its events (see the ``GET /spawner/v1/labs/<username>/events`` route description) will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
+    Its events (see the ``GET /nublado/spawner/v1/labs/<username>/events`` route description) will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
     This data may be persisted in Redis; see :ref:`Scaling <scaling>`.
 
     Credential scopes required: ``admin:jupyterlab``
 
-``POST /spawner/v1/labs/<username>/create``
+``POST /nublado/spawner/v1/labs/<username>/create``
     Create a new lab pod for a given user.
-    Returns status 303 with a ``Location`` header pointing to ``/spawner/v1/labs/<username>`` if creation of the lab pod has been successfully queued.
+    Returns status 303 with a ``Location`` header pointing to ``/nublado/spawner/v1/labs/<username>`` if creation of the lab pod has been successfully queued.
 
-    This uses a separate route instead of a ``PUT`` verb on the ``/spawner/v1/labs/<username>`` route because it needs separate Gafaelfawr configuration.
+    This uses a separate route instead of a ``PUT`` verb on the ``/nublado/spawner/v1/labs/<username>`` route because it needs separate Gafaelfawr configuration.
     (Specifically, it needs to request a delegated notebook token so that it can be provided to the newly-created lab.)
 
     This route returns as soon as the creation is queued.
-    To monitor the status of the pod creation, use ``GET /spawner/v1/labs/<username>/events``.
+    To monitor the status of the pod creation, use ``GET /nublado/spawner/v1/labs/<username>/events``.
 
     The body of the ``POST`` request is a specification for the lab.
     Example:
@@ -238,7 +238,7 @@ If Science Platform administrators need to test pod creation or see the event st
            }
        }
 
-    The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /spawner/v1/lab-form/<username>``.
+    The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /nublado/spawner/v1/lab-form/<username>``.
     The ``env`` dictionary contains the environment variables that JupyterHub wants to pass to the lab.
     Note that this dictionary will contain secrets, such as a token for the lab to talk back to the hub.
 
@@ -254,7 +254,7 @@ If Science Platform administrators need to test pod creation or see the event st
     Credential scopes required: ``exec:notebook``
     JupyterHub cannot create labs for arbitrary users without using a delegated token from that user.
 
-``GET /spawner/v1/labs/<username>/events``
+``GET /nublado/spawner/v1/labs/<username>/events``
     Returns the events for the lab of the given user, suitable for display in the JupyterHub lab creation status page.
     This is a stream of `server-sent events`_.
 
@@ -286,17 +286,17 @@ If Science Platform administrators need to test pod creation or see the event st
         An update to the progress bar.
         The ``data`` field will be the estimated completion percentage.
 
-    Calling ``POST /spawner/v1/labs/<username>/create`` or ``DELETE /spawner/v1/labs/<username>`` clears the previous saved event stream and starts a new event stream for that operation.
+    Calling ``POST /nublado/spawner/v1/labs/<username>/create`` or ``DELETE /nublado/spawner/v1/labs/<username>`` clears the previous saved event stream and starts a new event stream for that operation.
     Only one operation can be in progress at a time, and the event stream only represents the current operation.
 
     Credential scopes required: ``exec:notebook``
 
-``DELETE /spawner/v1/labs/<username>``
+``DELETE /nublado/spawner/v1/labs/<username>``
     Stop a running pod.
     Returns 202 on successful acceptance of the request and 404 if no lab for this username is currently running.
 
     This puts the lab in ``terminating`` state and starts the process of stopping it and deleting its associated resources.
-    The progress of that termination can be retrieved from ``GET /spawner/v1/labs/<username>/events``.
+    The progress of that termination can be retrieved from ``GET /nublado/spawner/v1/labs/<username>/events``.
 
     If termination is successful, the resource is removed.
     If termination is unsuccessful, the lab is put into a ``failed`` state and retained for error reporting.
@@ -304,29 +304,29 @@ If Science Platform administrators need to test pod creation or see the event st
     Credential scopes required: ``admin:notebook``
     JupyterHub can delete labs without having the user's credentials available, since this may be required to clean up state after an unclean restart of the service.
 
-``GET /spawner/v1/lab-form/<username>``
+``GET /nublado/spawner/v1/lab-form/<username>``
     Get the lab creation form for a particular user.
     The form may be customized for the user; for example, some images or lab sizes may only be available to certain users.
 
     The result is ``text/html`` suitable for inclusion in the lab creation page of JupyterHub.
-    It will define a form whose elements correspond to the keys of the ``options`` parameter to the ``POST /spawner/v1/labs/<username>/create`` call used to create a new lab.
+    It will define a form whose elements correspond to the keys of the ``options`` parameter to the ``POST /nublado/spawner/v1/labs/<username>/create`` call used to create a new lab.
     Each parameter should be single-valued.
 
     Credential scopes required: ``exec:notebook``
     JupyterHub cannot retrieve the lab creation form for arbitrary users, only for the user for whom it has a delegated token, since the identity of the token may be used to determine what options are available.
 
-``GET /spawner/v1/user-status``
+``GET /nublado/spawner/v1/user-status``
     Get the pod status for the authenticating user.
     If the user does not have a pod, returns 404.
 
-    This is identical to the ``GET /spawner/v1/labs/<username>`` route except that it only requires the ``exec:notebook`` scope, so users can use it, and the username is implicitly the calling user.
+    This is identical to the ``GET /nublado/spawner/v1/labs/<username>`` route except that it only requires the ``exec:notebook`` scope, so users can use it, and the username is implicitly the calling user.
     It allows a user to obtain status information for their own pod and may be used under the hood by the top-level UI for the Science Platform.
     (For example, the UI may change the Notebook Aspect portion of the page to indicate the user already has a running lab they can reconnect to, rather than indicating that the user can create a new lab.)
 
     Credential scopes required: ``exec:notebook``
 
 The API to create Dask pods is not yet defined in detail, but will look very similar to the above API, except that it will use a resource nested under the lab.
-For example, ``/spawner/v1/labs/<username>/dask-pool/<name>``.
+For example, ``/nublado/spawner/v1/labs/<username>/dask-pool/<name>``.
 
 JupyterHub spawner class
 ========================
@@ -338,7 +338,7 @@ This is based on the `JupyterHub spawner documentation <https://jupyterhub.readt
 The spawner implementation will assume that the ``token`` element of the authentication state in JupyterHub contains the delegated authentication credentials for the user, and use them to authenticate to the lab controller.
 
 ``options_form``
-    Calls ``GET /spawner/v1/spawn-form/<username>``, authenticated as the user, and returns the resulting HTML.
+    Calls ``GET /nublado/spawner/v1/spawn-form/<username>``, authenticated as the user, and returns the resulting HTML.
 
 ``options_from_form``
     Converts the parameters submitted to the spawner form into a form suitable to pass to the lab controller.
@@ -347,8 +347,8 @@ The spawner implementation will assume that the ``token`` element of the authent
     This will form the content of the ``options`` parameter to the ``POST`` call to start a lab.
 
 ``start``
-    Calls ``POST /spawner/v1/labs/<username>/create``, and then waits for the lab to finish starting.
-    The waiting is done via ``GET /spawner/v1/labs/<username>/events`` and waiting for a ``complete`` or ``failed`` event.
+    Calls ``POST /nublado/spawner/v1/labs/<username>/create``, and then waits for the lab to finish starting.
+    The waiting is done via ``GET /nublado/spawner/v1/labs/<username>/events`` and waiting for a ``complete`` or ``failed`` event.
 
     The ``options`` parameter in the ``POST`` body is set to the spawner form data transformed by ``options_from_form``.
     The ``env`` parameter in the ``POST`` body is set to the return value of the ``get_env`` method (which is not overridden by this spawner implementation).
@@ -379,14 +379,14 @@ The spawner implementation will assume that the ``token`` element of the authent
     The ``start`` method will acquire the lock on each event, update state as needed, and then if an ``info``, ``error``, ``complete``, or ``failure`` event was received, call ``notify_all`` on the condition to awaken any threads of execution waiting on the condition in the ``progress`` method.
 
 ``stop``
-    Calls ``DELETE /spawner/v1/labs/<username>`` to stop the user's lab and wait for it to complete.
-    As with ``start``, the waiting is done via ``GET /spawner/v1/labs/<username>/events`` and waiting for a ``complete`` or ``failed`` event.
+    Calls ``DELETE /nublado/spawner/v1/labs/<username>`` to stop the user's lab and wait for it to complete.
+    As with ``start``, the waiting is done via ``GET /nublado/spawner/v1/labs/<username>/events`` and waiting for a ``complete`` or ``failed`` event.
 
     Calling ``stop`` clears the events for that user.
     Then, while waiting, the ``stop`` coroutine updates an internal data structure holding a list of events for that user, in exactly the same way as ``start``.
 
 ``poll``
-    Calls ``GET /spawner/v1/labs/<username>`` to see if the user has a running lab.
+    Calls ``GET /nublado/spawner/v1/labs/<username>`` to see if the user has a running lab.
     Returns ``None`` if the lab is in ``starting``, ``running``, or ``terminating`` state, and ``0`` if it is in ``failed`` state or does not exist.
 
 ``progress``
@@ -423,7 +423,7 @@ However, the individual labs default to using JupyterHub's OpenID Connect server
 mobu also wants to simulate what a user would do, and users create their labs via JupyterHub.
 
 Instead, we will standardize on some supported options for the JupyterHub lab spawn endpoint (``POST /nb/hub/spawn``).
-These options are sent, with only minor transformation by the spawner class, to the lab controller via ``POST /spawner/v1/labs/<username>/create`` in the ``options`` key, so this amounts to a guarantee about what options are recognized.
+These options are sent, with only minor transformation by the spawner class, to the lab controller via ``POST /nublado/spawner/v1/labs/<username>/create`` in the ``options`` key, so this amounts to a guarantee about what options are recognized.
 The promise is that, regardless of what the lab creation form looks like or what parameters will be submitted by a normal user interaction with the JupyterHub lab creation page, a ``POST`` request with only the following options will be a supported way to create a lab:
 
 ``image_type``
@@ -444,7 +444,7 @@ The promise is that, regardless of what the lab creation form looks like or what
     May be one of ``small``, ``medium``, or ``large``.
     The definitions of those sizes is determined by lab controller configuration.
 
-The lab form returned by the ``GET /spawner/v1/lab-form/<user>`` route may use some of these same parameters or may use completely different parameters.
+The lab form returned by the ``GET /nublado/spawner/v1/lab-form/<user>`` route may use some of these same parameters or may use completely different parameters.
 The only guarantee is that a ``POST`` with only those parameters will suffice for creating a lab for a bot user.
 
 Pod configuration
@@ -473,7 +473,7 @@ Environment
 
 The environment of the lab pod is a combination of three sources of settings, here listed in the order in which they override each other.
 
-#. The ``env`` parameter to the ``POST /spawner/v1/labs/<username>/spawn`` call used to create the lab.
+#. The ``env`` parameter to the ``POST /nublado/spawner/v1/labs/<username>/spawn`` call used to create the lab.
    This in turn comes straight from JupyterHub.
 #. Settings added directly by the lab controller.
    ``MEM_LIMIT``, ``MEM_GUARANTEE``, ``CPU_LIMIT``, and ``CPU_GUARANTEE`` are set to match the quotas that it calculates based on the user identity and the requested image size.
@@ -674,7 +674,7 @@ Changing the configuration requires changing the Helm chart or the generated ``C
 
 All of these API calls require ``admin:notebook`` scope.
 
-``GET /spawner/v1/images``
+``GET /nublado/spawner/v1/images``
     Returns a list of known images and their names.
     This parses the available images according to SQR-059_ and shows the results:
 
@@ -715,7 +715,7 @@ All of these API calls require ``admin:notebook`` scope.
            ]
        }
 
-``GET /spawner/v1/prepulls``
+``GET /nublado/spawner/v1/prepulls``
     Returns status of the known prepull configurations.
     The response is a JSON object with three keys.
 
