@@ -1,0 +1,28 @@
+seqdiag {
+    default_fontsize = 14;
+
+    browser -> jupyterhub [note = "GET /nb/hub/spawn"];
+        jupyterhub => spawner [note = "GET labs/<username>"];
+        jupyterhub => spawner [note = "GET spawn-form/<username>"];
+    browser <-- jupyterhub [label = "spawn page"];
+
+    browser -> jupyterhub [note = "POST /nb/hub/spawn"];
+        jupyterhub -> spawner [note = "POST labs/<username>/spawn"];
+            spawner => kubernetes [label = "create resources"];
+            spawner => kubernetes [label = "create pod"];
+        jupyterhub <-- spawner;
+        jupyterhub ->> spawner [note = "GET labs/<username>/events"];
+            spawner ->> kubernetes [label = "status"];
+            spawner <<- kubernetes;
+        jupyterhub <-- spawner [label = "success"];
+        jupyterhub => lab [label = "initialize"];
+    browser <- jupyterhub [label = "redirect to lab"];
+
+    === User works on lab ===
+
+    browser -> lab [label = "shutdown"];
+        lab -> jupyterhub;
+            jupyterhub => spawner [note = "DELETE labs/<username>"];
+        lab <-- jupyterhub;
+    browser <-- lab [label = "redirect"];
+}
