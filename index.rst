@@ -142,7 +142,7 @@ The ``POST /nublado/spawner/v1/labs/<username>/create`` route will request a del
 
 .. _DMTN-224: https://dmtn-224.lsst.io/
 
-The ``admin:notebook`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
+The ``admin:jupyterlab`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
 It controls access to APIs that only JupyterHub needs to use.
 
 If Science Platform administrators need to test pod creation or see the event stream directly, they should use user impersonation (creating a token with the identity of the user that they're debugging).
@@ -155,7 +155,7 @@ If Science Platform administrators need to test pod creation or see the event st
 
        ["adam", "rra"]
 
-    Credential scopes required: ``admin:notebook``
+    Credential scopes required: ``admin:jupyterlab``
 
 ``GET /nublado/spawner/v1/labs/<username>``
     Returns status of the lab pod for the given user, or 404 if that user has no running or starting lab.
@@ -301,7 +301,7 @@ If Science Platform administrators need to test pod creation or see the event st
     If termination is successful, the resource is removed.
     If termination is unsuccessful, the lab is put into a ``failed`` state and retained for error reporting.
 
-    Credential scopes required: ``admin:notebook``
+    Credential scopes required: ``admin:jupyterlab``
     JupyterHub can delete labs without having the user's credentials available, since this may be required to clean up state after an unclean restart of the service.
 
 ``GET /nublado/spawner/v1/lab-form/<username>``
@@ -672,7 +672,7 @@ REST API
 To facilitate debugging of prepuller issues, there is a read-only REST API to see the status of a prepull configuration.
 Changing the configuration requires changing the Helm chart or the generated ``ConfigMap`` object and restarting the lab controller.
 
-All of these API calls require ``admin:notebook`` scope.
+All of these API calls require ``admin:jupyterlab`` scope.
 
 ``GET /nublado/spawner/v1/images``
     Returns a list of known images and their names.
@@ -823,7 +823,7 @@ Future work
   All Dask pods should be automatically deleted when the user's lab is deleted.
 
 - The lab controller should also support launching privileged pods for administrative maintenance outside of the Notebook Aspect.
-  This will require a new API protected by a different scope, not ``admin:notebook``, since JupyterHub should not have access to create such pods.
+  This will require a new API protected by a different scope, not ``admin:jupyterlab``, since JupyterHub should not have access to create such pods.
 
 - A more detailed specification of the configuration for provisioning init containers should be added, either here or (preferably) in operational documentation once this lab controller has been implemented.
 
