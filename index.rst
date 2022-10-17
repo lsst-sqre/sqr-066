@@ -197,16 +197,32 @@ If Science Platform administrators need to test pod creation or see the event st
                    "cpu": 4,
                    "memory": 1073741824
                }
-           }
+           },
+           "events": [
+               {   "event": "info",
+                   "data": "beginning lab creation for user 'rra'",
+                   "sent": False
+               },
+               {
+                   "event": "info",
+                   "data": "namespace 'nublado-rra' created",
+                   "sent": False
+               },
+               {
+                   "event": "progress",
+                   "data": "5.0",
+                   "sent": False
+               }
+           ]
        }
 
     The response contains a mix of information provided at lab creation (options and env), information derived from the user's identity used to create the lab (UID, GID, group membership), and information derived from other settings (the quotas, which are based primarily on the chosen size).
     ``status`` is one of ``starting``, ``running``, ``terminating``, or ``failed``.
     ``pod`` is one of ``present`` or ``missing`` and indicates the lab controller's understanding of whether the corresponding Kubernetes pod exists.
     (This is relevant primarily for a lab in ``failed`` status.)
+    ``events`` (see the ``GET /nublado/spawner/v1/labs/<username>/events``) is a list of events for the current operation for the current user.  These events will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
 
     If lab creation for that user was attempted but failed, the record of that failure is retained with a ``failed`` status.
-    Its events (see the ``GET /nublado/spawner/v1/labs/<username>/events`` route description) will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
     This data may be persisted in Redis; see :ref:`Scaling <scaling>`.
 
     Credential scopes required: ``admin:jupyterlab``
@@ -765,7 +781,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
 
     ``eligible`` is a boolean saying whether this node is eligible for prepulling.
     If it is false, the reason for its ineligibility will be given in ``comment``; otherwise, ``comment`` will be missing.
-    ``cached`` is a list of image URLs that are cached on that node.
+    ``cached`` is a list of images are cached on that node.
 
 .. _scaling:
 
