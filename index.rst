@@ -747,7 +747,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                {
                    "path": "<full Docker image path>",
                    "name": "<human readable name>",
-                   "hash": "<image hash>",
+                   "digest": "<image digest>",
                    "nodes": ["<node>", "<node>"]
                }
            ],
@@ -755,7 +755,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                {
                    "path": "<full Docker image path>",
                    "name": "<human readable name>"
-                   "hash": "<image hash>",
+                   "digest": "<image digest>",
                    "nodes": ["<node>", "<node>"],
                    "missing": ["<node>", "<node>"]
                }
