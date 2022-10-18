@@ -655,7 +655,7 @@ Another example that uses Google Artifact Repository and explicitly pulls an ima
      numWeeklies: 2
      numDailies: 3
      pin:
-       - url: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
+       - path: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
          name: "Weekly 2022_22"
 
 This uses Google Artifact Registry as the source of containers instead of a Docker image repository compatible with the Docker Hub protocol.
@@ -698,32 +698,32 @@ All of these API calls require ``admin:jupyterlab`` scope.
 
        {
            "recommended": {
-               "url": "<full image url>",
+               "path": "<full Docker image path>",
                "tag": "<image tag>",
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-weekly": {
-               "url": "<full image url>",
+               "path": "<full Docker image path>",
                "tag": "<image tag>",
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-daily": {
-               "url": "<full image url>",
+               "path": "<full Docker image path>",
                "tag": "<image tag>",
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-release": {
-               "url": "<full image url>",
+               "path": "<full Docker image path>",
                "tag": "<image tag>",
                "name": "<human readable name>",
                "prepulled": true
            },
            "all": [
                {
-                   "url": "<full image url>",
+                   "path": "<full Docker image path>",
                    "tag": "<image tag>",
                    "name": "<human readable name>",
                    "prepulled": false
@@ -745,7 +745,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
        "images": {
            "prepulled": [
                {
-                   "url": "<full image url>",
+                   "path": "<full Docker image path>",
                    "name": "<human readable name>",
                    "hash": "<image hash>",
                    "nodes": ["<node>", "<node>"]
@@ -753,7 +753,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
            ],
            "pending": [
                {
-                   "url": "<full image url>",
+                   "path": "<full Docker image path>",
                    "name": "<human readable name>"
                    "hash": "<image hash>",
                    "nodes": ["<node>", "<node>"],
