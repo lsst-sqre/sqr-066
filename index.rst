@@ -199,19 +199,20 @@ If Science Platform administrators need to test pod creation or see the event st
                }
            },
            "events": [
-               {   "event": "info",
+               {
+	           "event": "info",
                    "data": "beginning lab creation for user 'rra'",
-                   "sent": False
+                   "sent": false
                },
                {
                    "event": "info",
                    "data": "namespace 'nublado-rra' created",
-                   "sent": False
+                   "sent": false
                },
                {
                    "event": "progress",
                    "data": "5.0",
-                   "sent": False
+                   "sent": false
                }
            ]
        }
