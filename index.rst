@@ -782,7 +782,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
 
     ``eligible`` is a boolean saying whether this node is eligible for prepulling.
     If it is false, the reason for its ineligibility will be given in ``comment``; otherwise, ``comment`` will be missing.
-    ``cached`` is a list of images are cached on that node.
+    ``cached`` is a list of images that are cached on that node.
 
 .. _scaling:
 
