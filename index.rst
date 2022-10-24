@@ -700,32 +700,42 @@ All of these API calls require ``admin:jupyterlab`` scope.
        {
            "recommended": {
                "path": "<full Docker image path>",
-               "tag": "<image tag>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-weekly": {
                "path": "<full Docker image path>",
-               "tag": "<image tag>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-daily": {
                "path": "<full Docker image path>",
-               "tag": "<image tag>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
                "prepulled": true
            },
            "latest-release": {
                "path": "<full Docker image path>",
-               "tag": "<image tag>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
                "prepulled": true
            },
            "all": [
                {
                    "path": "<full Docker image path>",
-                   "tag": "<image tag>",
+                   "tags": {
+                       "<image tag>": "<human readable name>"
+                   },
                    "name": "<human readable name>",
                    "prepulled": false
                }
