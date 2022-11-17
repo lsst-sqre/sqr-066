@@ -655,9 +655,9 @@ Another example that uses Google Artifact Repository and explicitly pulls an ima
      numReleases: 1
      numWeeklies: 2
      numDailies: 3
-     pin:
-       - path: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
-         name: "Weekly 2022_22"
+     pins:
+     - w_2022_22
+     - w_2022_04
 
 This uses Google Artifact Registry as the source of containers instead of a Docker image repository compatible with the Docker Hub protocol.
 It also pins a specific image, ensuring that it is always pulled regardless of whether it is one of the latest releases, weeklies, or dailies.
