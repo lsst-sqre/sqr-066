@@ -692,7 +692,10 @@ Changing the configuration requires changing the Helm chart or the generated ``C
 All of these API calls require ``admin:jupyterlab`` scope.
 
 ``GET /nublado/spawner/v1/images``
-    Returns a list of known images and their names.
+    Returns an object consisting of the images allowed by the bot users,
+    followed by a key ``all`` whose contents are all known images and
+    their names.  Each of the top-level object keys is the string
+    literal exactly as shown.
     This parses the available images according to SQR-059_ and shows the results:
 
     .. code-block:: json
