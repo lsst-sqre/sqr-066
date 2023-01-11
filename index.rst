@@ -239,25 +239,37 @@ If Science Platform administrators need to test pod creation or see the event st
     To monitor the status of the pod creation, use ``GET /nublado/spawner/v1/labs/<username>/events``.
 
     The body of the ``POST`` request is a specification for the lab.
+
     Example:
 
     .. code-block:: json
 
        {
            "options": {
-               "debug": true,
-               "image": "sciplat/sciplat-lab:w_2022_37",
-               "reset_user_env": true,
-               "size": "large"
+               "enable_debug": [ "true" ],
+               "image_list": [ "sciplat/sciplat-lab:w_2022_37" ],
+	       "image_dropdown": null,
+               "reset_user_env": [ "true" ],
+               "size": [ "large" ]
            },
            "env": {
                "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api"
            }
        }
 
-    The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /nublado/spawner/v1/lab-form/<username>``.
-    The ``env`` dictionary contains the environment variables that JupyterHub wants to pass to the lab.
-    Note that this dictionary will contain secrets, such as a token for the lab to talk back to the hub.
+    The keys of the ``options`` dictionary should be the parameters
+    submitted by a ``POST`` of the form returned by ``GET
+    /nublado/spawner/v1/lab-form/<username>``.  Note that the
+    ``options`` field is exactly what is emitted by the JupyterHub
+    Spawner's ``options_from_form()`` method: that is, all object keys
+    are strings, and all values are lists of strings.  This is not what
+    is returned in the status call: one-item lists are unwrapped, and
+    strings that represent booleans will be converted to booleans.
+
+    The ``env`` dictionary contains the environment variables that
+    JupyterHub wants to pass to the lab.  Note that this dictionary will
+    contain secrets, such as a token for the lab to talk back to the
+    hub.
 
     If a lab for the user already exists, this request will fail with a 409 status code.
     The configuration of the existing lab cannot be modified with a ``POST`` request.
