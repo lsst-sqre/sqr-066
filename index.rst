@@ -200,7 +200,7 @@ If Science Platform administrators need to test pod creation or see the event st
            },
            "events": [
                {
-	           "event": "info",
+                   "event": "info",
                    "data": "beginning lab creation for user 'rra'",
                    "sent": false
                },
@@ -719,6 +719,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                    "<image tag>": "<human readable name>"
                },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-weekly": {
@@ -727,6 +728,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                    "<image tag>": "<human readable name>"
                },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-daily": {
@@ -735,6 +737,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                    "<image tag>": "<human readable name>"
                },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-release": {
@@ -743,6 +746,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                    "<image tag>": "<human readable name>"
                },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "all": [
@@ -751,6 +755,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
                    "tags": {
                        "<image tag>": "<human readable name>"
                    },
+                   "digest": "<image digest>",
                    "name": "<human readable name>",
                    "prepulled": false
                }
