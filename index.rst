@@ -142,7 +142,7 @@ The ``POST /nublado/spawner/v1/labs/<username>/create`` route will request a del
 
 .. _DMTN-224: https://dmtn-224.lsst.io/
 
-The ``admin:notebook`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
+The ``admin:jupyterlab`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
 It controls access to APIs that only JupyterHub needs to use.
 
 If Science Platform administrators need to test pod creation or see the event stream directly, they should use user impersonation (creating a token with the identity of the user that they're debugging).
@@ -155,7 +155,7 @@ If Science Platform administrators need to test pod creation or see the event st
 
        ["adam", "rra"]
 
-    Credential scopes required: ``admin:notebook``
+    Credential scopes required: ``admin:jupyterlab``
 
 ``GET /nublado/spawner/v1/labs/<username>``
     Returns status of the lab pod for the given user, or 404 if that user has no running or starting lab.
@@ -197,16 +197,33 @@ If Science Platform administrators need to test pod creation or see the event st
                    "cpu": 4,
                    "memory": 1073741824
                }
-           }
+           },
+           "events": [
+               {
+                   "event": "info",
+                   "data": "beginning lab creation for user 'rra'",
+                   "sent": false
+               },
+               {
+                   "event": "info",
+                   "data": "namespace 'nublado-rra' created",
+                   "sent": false
+               },
+               {
+                   "event": "progress",
+                   "data": "5.0",
+                   "sent": false
+               }
+           ]
        }
 
     The response contains a mix of information provided at lab creation (options and env), information derived from the user's identity used to create the lab (UID, GID, group membership), and information derived from other settings (the quotas, which are based primarily on the chosen size).
     ``status`` is one of ``starting``, ``running``, ``terminating``, or ``failed``.
     ``pod`` is one of ``present`` or ``missing`` and indicates the lab controller's understanding of whether the corresponding Kubernetes pod exists.
     (This is relevant primarily for a lab in ``failed`` status.)
+    ``events`` (see the ``GET /nublado/spawner/v1/labs/<username>/events``) is a list of events for the current operation for the current user.  These events will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
 
     If lab creation for that user was attempted but failed, the record of that failure is retained with a ``failed`` status.
-    Its events (see the ``GET /nublado/spawner/v1/labs/<username>/events`` route description) will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
     This data may be persisted in Redis; see :ref:`Scaling <scaling>`.
 
     Credential scopes required: ``admin:jupyterlab``
@@ -228,19 +245,30 @@ If Science Platform administrators need to test pod creation or see the event st
 
        {
            "options": {
-               "debug": true,
-               "image": "sciplat/sciplat-lab:w_2022_37",
-               "reset_user_env": true,
-               "size": "large"
+               "enable_debug": [ "true" ],
+               "image_list": [ "sciplat/sciplat-lab:w_2022_37" ],
+	       "image_dropdown": null,
+               "reset_user_env": [ "true" ],
+               "size": [ "large" ]
            },
            "env": {
                "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api"
            }
        }
 
-    The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /nublado/spawner/v1/lab-form/<username>``.
-    The ``env`` dictionary contains the environment variables that JupyterHub wants to pass to the lab.
-    Note that this dictionary will contain secrets, such as a token for the lab to talk back to the hub.
+    The keys of the ``options`` dictionary should be the parameters
+    submitted by a ``POST`` of the form returned by ``GET
+    /nublado/spawner/v1/lab-form/<username>``.  Note that the
+    ``options`` field is exactly what is emitted by the JupyterHub
+    Spawner's ``options_from_form()`` method: that is, all object keys
+    are strings, and all values are lists of strings.  This is not what
+    is returned in the status call: one-item lists are unwrapped, and
+    strings that represent booleans will be converted to booleans.
+
+    The ``env`` dictionary contains the environment variables that
+    JupyterHub wants to pass to the lab.  Note that this dictionary will
+    contain secrets, such as a token for the lab to talk back to the
+    hub.
 
     If a lab for the user already exists, this request will fail with a 409 status code.
     The configuration of the existing lab cannot be modified with a ``POST`` request.
@@ -301,7 +329,7 @@ If Science Platform administrators need to test pod creation or see the event st
     If termination is successful, the resource is removed.
     If termination is unsuccessful, the lab is put into a ``failed`` state and retained for error reporting.
 
-    Credential scopes required: ``admin:notebook``
+    Credential scopes required: ``admin:jupyterlab``
     JupyterHub can delete labs without having the user's credentials available, since this may be required to clean up state after an unclean restart of the service.
 
 ``GET /nublado/spawner/v1/lab-form/<username>``
@@ -638,9 +666,9 @@ Another example that uses Google Artifact Repository and explicitly pulls an ima
      numReleases: 1
      numWeeklies: 2
      numDailies: 3
-     pin:
-       - url: us-central1-docker.pkg.dev/rubin-shared-services-71ec/sciplat/sciplat-lab:w_2022_22
-         name: "Weekly 2022_22"
+     pins:
+     - w_2022_22
+     - w_2022_04
 
 This uses Google Artifact Registry as the source of containers instead of a Docker image repository compatible with the Docker Hub protocol.
 It also pins a specific image, ensuring that it is always pulled regardless of whether it is one of the latest releases, weeklies, or dailies.
@@ -672,43 +700,61 @@ REST API
 To facilitate debugging of prepuller issues, there is a read-only REST API to see the status of a prepull configuration.
 Changing the configuration requires changing the Helm chart or the generated ``ConfigMap`` object and restarting the lab controller.
 
-All of these API calls require ``admin:notebook`` scope.
+All of these API calls require ``admin:jupyterlab`` scope.
 
 ``GET /nublado/spawner/v1/images``
-    Returns a list of known images and their names.
+    Returns an object consisting of the images allowed by the bot users,
+    followed by a key ``all`` whose contents are all known images and
+    their names.  Each of the top-level object keys is the string
+    literal exactly as shown.
     This parses the available images according to SQR-059_ and shows the results:
 
     .. code-block:: json
 
        {
            "recommended": {
-               "url": "<full image url>",
-               "tag": "<image tag>",
+               "path": "<full Docker image path>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-weekly": {
-               "url": "<full image url>",
-               "tag": "<image tag>",
+               "path": "<full Docker image path>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-daily": {
-               "url": "<full image url>",
-               "tag": "<image tag>",
+               "path": "<full Docker image path>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-release": {
-               "url": "<full image url>",
-               "tag": "<image tag>",
+               "path": "<full Docker image path>",
+               "tags": {
+                   "<image tag>": "<human readable name>"
+               },
                "name": "<human readable name>",
+	       "digest": "<image digest>",
                "prepulled": true
            },
            "all": [
                {
-                   "url": "<full image url>",
-                   "tag": "<image tag>",
+                   "path": "<full Docker image path>",
+                   "tags": {
+                       "<image tag>": "<human readable name>"
+                   },
+                   "digest": "<image digest>",
                    "name": "<human readable name>",
                    "prepulled": false
                }
@@ -729,17 +775,17 @@ All of these API calls require ``admin:notebook`` scope.
        "images": {
            "prepulled": [
                {
-                   "url": "<full image url>",
+                   "path": "<full Docker image path>",
                    "name": "<human readable name>",
-                   "hash": "<image hash>",
+                   "digest": "<image digest>",
                    "nodes": ["<node>", "<node>"]
                }
            ],
            "pending": [
                {
-                   "url": "<full image url>",
+                   "path": "<full Docker image path>",
                    "name": "<human readable name>"
-                   "hash": "<image hash>",
+                   "digest": "<image digest>",
                    "nodes": ["<node>", "<node>"],
                    "missing": ["<node>", "<node>"]
                }
@@ -765,7 +811,7 @@ All of these API calls require ``admin:notebook`` scope.
 
     ``eligible`` is a boolean saying whether this node is eligible for prepulling.
     If it is false, the reason for its ineligibility will be given in ``comment``; otherwise, ``comment`` will be missing.
-    ``cached`` is a list of image URLs that are cached on that node.
+    ``cached`` is a list of images that are cached on that node.
 
 .. _scaling:
 
@@ -823,7 +869,7 @@ Future work
   All Dask pods should be automatically deleted when the user's lab is deleted.
 
 - The lab controller should also support launching privileged pods for administrative maintenance outside of the Notebook Aspect.
-  This will require a new API protected by a different scope, not ``admin:notebook``, since JupyterHub should not have access to create such pods.
+  This will require a new API protected by a different scope, not ``admin:jupyterlab``, since JupyterHub should not have access to create such pods.
 
 - A more detailed specification of the configuration for provisioning init containers should be added, either here or (preferably) in operational documentation once this lab controller has been implemented.
 
