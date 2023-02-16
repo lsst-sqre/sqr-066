@@ -239,7 +239,6 @@ If Science Platform administrators need to test pod creation or see the event st
     To monitor the status of the pod creation, use ``GET /nublado/spawner/v1/labs/<username>/events``.
 
     The body of the ``POST`` request is a specification for the lab.
-
     Example:
 
     .. code-block:: json
