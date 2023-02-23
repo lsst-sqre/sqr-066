@@ -249,7 +249,8 @@ If Science Platform administrators need to test pod creation or see the event st
        }
 
     The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /nublado/spawner/v1/lab-form/<username>``.
-    The ``options`` values may be normal strings and booleans, or they can be in the form returned by the JupyterHub ``Spawner.options_from_form`` method, where all values are lists with one element and boolean values are the strings ``true`` or ``false``.
+    The ``options`` values may be normal strings and booleans, or they can be in the form returned by the JupyterHub ``Spawner.options_from_form`` method.
+    In that case, all values are lists with one element, boolean values are the strings ``true`` or ``false``, and numbers are the string representation of that number.
     The lab controller supports either format of input and will automatically convert the latter form to the former.
 
     The ``env`` dictionary contains the environment variables that JupyterHub wants to pass to the lab.
