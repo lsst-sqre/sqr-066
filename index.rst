@@ -20,10 +20,8 @@ This same approach can be used for creating Dask_ pods for parallel computation 
 Background
 ==========
 
-See DMTN-164_ for a complete description of the v2 architecture of the Notebook Aspect of the Rubin Science Platform.
+See :dmtn:`164` for a complete description of the v2 architecture of the Notebook Aspect of the Rubin Science Platform.
 This tech note only touches on aspects relevant to user lab pod creation.
-
-.. _DMTN-164: https://dmtn-164.lsst.io/
 
 The v2 architecture uses `JupyterHub Kubernetes Spawner`_ to spawn user pods for notebooks, with significant local customizations via hooks defined in the nublado2_ package.
 Those hooks create additional Kubernetes resources used by the pod: multiple ``ConfigMap`` resources with configuration, :file:`/etc/passwd` and related files for username and group mappings inside the pod; and Kubernetes secrets (via vault-secrets-operator_).
@@ -44,10 +42,9 @@ The list of resources to create in each user namespace when creating a lab pod i
 This system is supported by two ancillary web services.
 moneypenny_ is called before each pod creation to provision the user if necessary.
 Currently, the only thing that it does is create user home directories in deployments where this must be done before the first pod creation.
-This design is described in SQR-052_.
+This design is described in :sqr:`052`.
 
 .. _moneypenny: https://github.com/lsst-sqre/moneypenny/
-.. _SQR-052: https://sqr-052.lsst.io/
 
 Second, since the images used for user notebook pods are quite large, we prepull those images to each node in the Kubernetes cluster.
 This is done by cachemachine_.
@@ -95,10 +92,8 @@ This would replace the Kubernetes pod creation code in `Dask Kubernetes`_.
 
 As a result of those changes, all Kubernetes cluster permissions can be removed from both JupyterHub and the user lab pods.
 Instead, both JupyterHub and user pods (via Dask) would make requests to the lab controller, authenticated with either JupyterHub's bot user credentials or the user's notebook token.
-That authentication would be done via the normal Science Platform authentication and authorization system (see DMTN-234_).
+That authentication would be done via the normal Science Platform authentication and authorization system (see :dmtn:`234`).
 The lab controller can then impose any necessary restrictions, checks, and verification required to ensure that only safe and expected pod creation operations are allowed.
-
-.. _DMTN-234: https://dmtn-234.lsst.io/
 
 Only the lab controller itself will have permissions on the Kubernetes cluster.
 It will be smaller, simpler code audited by Rubin Observatory with a very limited API exposed to users.
@@ -136,11 +131,9 @@ Initial routes for the lab creation API.
 This design makes the explicit assumption that a given user may only have one lab running at a time.
 Supporting multiple labs for the same user (something that is supported by JupyterHub but not by the current design of the Rubin Science Platform) would require a redesign of the API.
 
-This API will be protected by the regular authentication mechanism for the Rubin Science Platform, described in DMTN-224_.
+This API will be protected by the regular authentication mechanism for the Rubin Science Platform, described in :dmtn:`224`.
 It will use multiple ingresses to set different authentication requirements for different routes.
 The ``POST /nublado/spawner/v1/labs/<username>/create`` route will request a delegated notebook token, which it will provide to the newly-created pod so that the user has authentication credentials inside their lab.
-
-.. _DMTN-224: https://dmtn-224.lsst.io/
 
 The ``admin:jupyterlab`` scope is a new scope granted only to the JupyterHub pod itself and (optionally) Science Platform administrators.
 It controls access to APIs that only JupyterHub needs to use.
@@ -168,8 +161,8 @@ If Science Platform administrators need to test pod creation or see the event st
            "status": "starting",
            "pod": "missing",
            "options": {
-               "debug": false,
-               "image": "lsstsqre/sciplat-lab:w_2022_37",
+               "enable_debug": false,
+               "image_list": "lsstsqre/sciplat-lab:w_2022_37",
                "reset_user_env": false,
                "size": "large"
            },
@@ -245,30 +238,23 @@ If Science Platform administrators need to test pod creation or see the event st
 
        {
            "options": {
-               "enable_debug": [ "true" ],
-               "image_list": [ "sciplat/sciplat-lab:w_2022_37" ],
-	       "image_dropdown": null,
-               "reset_user_env": [ "true" ],
-               "size": [ "large" ]
+               "enable_debug": ["true"],
+               "image_list": ["sciplat/sciplat-lab:w_2022_37"],
+               "reset_user_env": ["true"],
+               "size": ["large"]
            },
            "env": {
                "JUPYTERHUB_API_URL": "http://hub.nublado2:8081/nb/hub/api"
            }
        }
 
-    The keys of the ``options`` dictionary should be the parameters
-    submitted by a ``POST`` of the form returned by ``GET
-    /nublado/spawner/v1/lab-form/<username>``.  Note that the
-    ``options`` field is exactly what is emitted by the JupyterHub
-    Spawner's ``options_from_form()`` method: that is, all object keys
-    are strings, and all values are lists of strings.  This is not what
-    is returned in the status call: one-item lists are unwrapped, and
-    strings that represent booleans will be converted to booleans.
+    The keys of the ``options`` dictionary should be the parameters submitted by a ``POST`` of the form returned by ``GET /nublado/spawner/v1/lab-form/<username>``.
+    The ``options`` values may be normal strings and booleans, or they can be in the form returned by the JupyterHub ``Spawner.options_from_form`` method.
+    In that case, all values are lists with one element, boolean values are the strings ``true`` or ``false``, and numbers are the string representation of that number.
+    The lab controller supports either format of input and will automatically convert the latter form to the former.
 
-    The ``env`` dictionary contains the environment variables that
-    JupyterHub wants to pass to the lab.  Note that this dictionary will
-    contain secrets, such as a token for the lab to talk back to the
-    hub.
+    The ``env`` dictionary contains the environment variables that JupyterHub wants to pass to the lab.
+    This dictionary will contain secrets, such as a token for the lab to talk back to JupyterHub.
 
     If a lab for the user already exists, this request will fail with a 409 status code.
     The configuration of the existing lab cannot be modified with a ``POST`` request.
@@ -279,8 +265,10 @@ If Science Platform administrators need to test pod creation or see the event st
     If there is no record of the lab having been created but the namespace already exists, the lab controller will stop any pod and delete the namespace first, and then recreate it fresh.
     This allows recovery from crashed lab controllers or crashed JupyterHub pods.
 
+    The caller must provide credentials for the user who will own the lab (generally, a delegated notebook token).
+    JupyterHub cannot create labs for arbitrary users.
+
     Credential scopes required: ``exec:notebook``
-    JupyterHub cannot create labs for arbitrary users without using a delegated token from that user.
 
 ``GET /nublado/spawner/v1/labs/<username>/events``
     Returns the events for the lab of the given user, suitable for display in the JupyterHub lab creation status page.
@@ -314,7 +302,7 @@ If Science Platform administrators need to test pod creation or see the event st
         An update to the progress bar.
         The ``data`` field will be the estimated completion percentage.
 
-    Calling ``POST /nublado/spawner/v1/labs/<username>/create`` or ``DELETE /nublado/spawner/v1/labs/<username>`` clears the previous saved event stream and starts a new event stream for that operation.
+    Successfully calling ``POST /nublado/spawner/v1/labs/<username>/create`` or ``DELETE /nublado/spawner/v1/labs/<username>`` clears the previous saved event stream and starts a new event stream for that operation.
     Only one operation can be in progress at a time, and the event stream only represents the current operation.
 
     Credential scopes required: ``exec:notebook``
@@ -340,8 +328,9 @@ If Science Platform administrators need to test pod creation or see the event st
     It will define a form whose elements correspond to the keys of the ``options`` parameter to the ``POST /nublado/spawner/v1/labs/<username>/create`` call used to create a new lab.
     Each parameter should be single-valued.
 
-    Credential scopes required: ``exec:notebook``
     JupyterHub cannot retrieve the lab creation form for arbitrary users, only for the user for whom it has a delegated token, since the identity of the token may be used to determine what options are available.
+
+    Credential scopes required: ``exec:notebook``
 
 ``GET /nublado/spawner/v1/user-status``
     Get the pod status for the authenticating user.
@@ -368,19 +357,13 @@ The spawner implementation will assume that the ``token`` element of the authent
 ``options_form``
     Calls ``GET /nublado/spawner/v1/spawn-form/<username>``, authenticated as the user, and returns the resulting HTML.
 
-``options_from_form``
-    Converts the parameters submitted to the spawner form into a form suitable to pass to the lab controller.
-    The input form submission will be a map of keys to lists of strings.
-    Each list must contain only one string, and then the strings ``true`` and ``false`` will be converted to their boolean values.
-    This will form the content of the ``options`` parameter to the ``POST`` call to start a lab.
-
 ``start``
     Calls ``POST /nublado/spawner/v1/labs/<username>/create``, and then waits for the lab to finish starting.
     The waiting is done via ``GET /nublado/spawner/v1/labs/<username>/events`` and waiting for a ``complete`` or ``failed`` event.
 
-    The ``options`` parameter in the ``POST`` body is set to the spawner form data transformed by ``options_from_form``.
+    The ``options`` parameter in the ``POST`` body is set to the return value of the ``options_from_form`` method (which is not overridden by this spawner implementation).
     The ``env`` parameter in the ``POST`` body is set to the return value of the ``get_env`` method (which is not overridden by this spawner implementation).
-    (Be aware that the return value of ``get_env`` contains secrets, such as the token for the lab to talk back to the hub.)
+    Be aware that the return value of ``get_env`` contains secrets, such as the token for the lab to talk back to the hub.
 
     Calling ``start`` clears the events for that user.
     Then, while waiting, the ``start`` coroutine updates an internal data structure holding a list of events for that user.
@@ -435,16 +418,17 @@ Quotas are set as appropriate in the lab controller based on metadata about the 
 Similarly, the ``cmd`` and ``args`` configuration parameters to the spawner are ignored.
 The lab controller will always start the JupyterLab single-user server.
 
+.. _bot-user-labs:
+
 Labs for bot users
 ==================
 
 In several cases, we want a service to be able to create a lab for a bot user.
 One example is mobu_, which performs actions typical of a Science Platform user to look for errors or other problems.
-Another example is `Times Square`_ (also see SQR-062_), which uses labs to render notebooks.
+Another example is `Times Square`_ (also see :sqr:`062`), which uses labs to render notebooks.
 
 .. _mobu: https://github.com/lsst-sqre/mobu
 .. _Times Square: https://github.com/lsst-sqre/times-square
-.. _SQR-062: https://sqr-062.lsst.io/
 
 One option would be to allow such services to talk to the lab controller directly, bypassing the complex JupyterHub layer that doesn't have a clean API for creating a lab.
 However, the individual labs default to using JupyterHub's OpenID Connect server for authentication and assume they can talk to a hub for other purposes (idle culling, max age culling, etc.).
@@ -456,7 +440,7 @@ The promise is that, regardless of what the lab creation form looks like or what
 
 ``image_type``
     May be one of ``recommended``, ``latest-weekly``, ``latest-daily``, or ``latest-release``.
-    The corresponding image, as determined by the rules in SQR-059_, will be used for the lab.
+    The corresponding image, as determined by the rules in :sqr:`059`, will be used for the lab.
     See :ref:`Prepulling configuration <prepulling-config>` for more details.
     Either this or ``image_tag`` must be set.
 
@@ -645,11 +629,9 @@ An example of an image configuration:
      numWeeklies: 2
      numDailies: 3
 
-This configuration pulls a group of images from the ``lsstsqre/sciplat-lab`` Docker image repository at registry.hub.docker.com that follow the tag conventions documented in SQR-059_.
+This configuration pulls a group of images from the ``lsstsqre/sciplat-lab`` Docker image repository at registry.hub.docker.com that follow the tag conventions documented in :sqr:`059`.
 The latest release, the latest two weeklies, and the latest three dailies will be prepulled.
 Whatever image has the tag ``recommended`` will appear as the first and default selected image.
-
-.. _SQR-059: https://sqr-059.lsst.io/
 
 Another example that uses Google Artifact Repository and explicitly pulls an image regardless of its recency:
 
@@ -703,57 +685,52 @@ Changing the configuration requires changing the Helm chart or the generated ``C
 All of these API calls require ``admin:jupyterlab`` scope.
 
 ``GET /nublado/spawner/v1/images``
-    Returns an object consisting of the images allowed by the bot users,
-    followed by a key ``all`` whose contents are all known images and
-    their names.  Each of the top-level object keys is the string
-    literal exactly as shown.
-    This parses the available images according to SQR-059_ and shows the results:
+    Returns information about the images available for spawning.
+    Each keyword that is a valid value for ``image_type`` (see :ref:`bot-user-labs`) is given first, with additional information about that image.
+    Then, the key ``all`` provides a list of all known images.
+
+    Example:
 
     .. code-block:: json
 
        {
            "recommended": {
-               "path": "<full Docker image path>",
-               "tags": {
-                   "<image tag>": "<human readable name>"
-               },
+               "reference": "<full Docker reference>",
+               "tag": "<tag name>"
+               "aliases": ["<tag name>", "<tag name>"],
                "name": "<human readable name>",
 	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-weekly": {
-               "path": "<full Docker image path>",
-               "tags": {
-                   "<image tag>": "<human readable name>"
-               },
+               "reference": "<full Docker reference>",
+               "tag": "<tag name>"
+               "aliases": ["<tag name>", "<tag name>"],
                "name": "<human readable name>",
 	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-daily": {
-               "path": "<full Docker image path>",
-               "tags": {
-                   "<image tag>": "<human readable name>"
-               },
+               "reference": "<full Docker reference>",
+               "tag": "<tag name>"
+               "aliases": ["<tag name>", "<tag name>"],
                "name": "<human readable name>",
 	       "digest": "<image digest>",
                "prepulled": true
            },
            "latest-release": {
-               "path": "<full Docker image path>",
-               "tags": {
-                   "<image tag>": "<human readable name>"
-               },
+               "reference": "<full Docker reference>",
+               "tag": "<tag name>"
+               "aliases": ["<tag name>", "<tag name>"],
                "name": "<human readable name>",
 	       "digest": "<image digest>",
                "prepulled": true
            },
            "all": [
                {
-                   "path": "<full Docker image path>",
-                   "tags": {
-                       "<image tag>": "<human readable name>"
-                   },
+                   "reference": "<full Docker reference>",
+                   "tag": "<tag name>"
+                   "aliases": ["<tag name>", "<tag name>"],
                    "digest": "<image digest>",
                    "name": "<human readable name>",
                    "prepulled": false
@@ -761,12 +738,16 @@ All of these API calls require ``admin:jupyterlab`` scope.
            ]
        }
 
+    Each of the top-level object keys is the string literal exactly as shown.
+    The alias information may not be complete.
+    (In other words, the image may have additional aliases that are not shown.)
+
 ``GET /nublado/spawner/v1/prepulls``
     Returns status of the known prepull configurations.
     The response is a JSON object with three keys.
 
     The first key is ``config``, which contains the prepull configuration.
-    This is identical to the configuration blocks given above, but converted to JSON.
+    This is identical to the configuration blocks given above, but converted to JSON and using snake-case instead of camel-case for keys.
 
     The second key is ``images``, which shows the list of images that are being prepulled as follows:
 
@@ -775,17 +756,21 @@ All of these API calls require ``admin:jupyterlab`` scope.
        "images": {
            "prepulled": [
                {
-                   "path": "<full Docker image path>",
+                   "reference": "<full Docker reference>",
+                   "tag": "<tag name>",
                    "name": "<human readable name>",
                    "digest": "<image digest>",
+                   "size": "<size in bytes>",
                    "nodes": ["<node>", "<node>"]
                }
            ],
            "pending": [
                {
-                   "path": "<full Docker image path>",
+                   "reference": "<full Docker reference>",
+                   "tag": "<tag name>",
                    "name": "<human readable name>"
                    "digest": "<image digest>",
+                   "size": "<size in bytes>",
                    "nodes": ["<node>", "<node>"],
                    "missing": ["<node>", "<node>"]
                }
@@ -794,6 +779,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
 
     ``prepulled`` lists the images that the lab controller believes have been successfully prepulled to every node based on this prepull configuration.
     ``pending`` lists the ones that still need to be prepulled.
+    ``size`` may or may not be present.
 
     For each image, ``nodes`` contains a list of the nodes to which that image has been prepulled, and ``missing`` contains a list of the nodes that should have that image but do not.
 
@@ -806,7 +792,7 @@ All of these API calls require ``admin:jupyterlab`` scope.
            "name": "<name>",
            "eligible": true,
            "comment": "<why ineligible>",
-           "cached": ["<image>", "<image>"]
+           "cached": ["<reference>", "<reference>"]
        }
 
     ``eligible`` is a boolean saying whether this node is eligible for prepulling.
