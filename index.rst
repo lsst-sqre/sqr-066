@@ -151,14 +151,14 @@ If Science Platform administrators need to test pod creation or see the event st
     Credential scopes required: ``admin:jupyterlab``
 
 ``GET /nublado/spawner/v1/labs/<username>``
-    Returns status of the lab pod for the given user, or 404 if that user has no running or starting lab.
+    Returns status of the lab pod for the given user, or 404 if that user has no running or pending lab.
     Example:
 
     .. code-block:: json
 
        {
            "username": "rra",
-           "status": "starting",
+           "status": "pending",
            "pod": "missing",
            "options": {
                "enable_debug": false,
@@ -211,7 +211,7 @@ If Science Platform administrators need to test pod creation or see the event st
        }
 
     The response contains a mix of information provided at lab creation (options and env), information derived from the user's identity used to create the lab (UID, GID, group membership), and information derived from other settings (the quotas, which are based primarily on the chosen size).
-    ``status`` is one of ``starting``, ``running``, ``terminating``, or ``failed``.
+    ``status`` is one of ``pending``, ``running``, ``terminating``, or ``failed``, and corresponds to the ``phase`` field of a Kubernetes PodStatus object.
     ``pod`` is one of ``present`` or ``missing`` and indicates the lab controller's understanding of whether the corresponding Kubernetes pod exists.
     (This is relevant primarily for a lab in ``failed`` status.)
     ``events`` (see the ``GET /nublado/spawner/v1/labs/<username>/events``) is a list of events for the current operation for the current user.  These events will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
@@ -398,7 +398,7 @@ The spawner implementation will assume that the ``token`` element of the authent
 
 ``poll``
     Calls ``GET /nublado/spawner/v1/labs/<username>`` to see if the user has a running lab.
-    Returns ``None`` if the lab is in ``starting``, ``running``, or ``terminating`` state, and ``0`` if it is in ``failed`` state or does not exist.
+    Returns ``None`` if the lab is in ``pending``, ``running``, or ``terminating`` state, ``0`` if it does not exist, and ``2`` if the lab pod is in ``failed`` state.
 
 ``progress``
     Yields (as an async generator) the list of progress events accumulated by the previous ``start`` or ``stop`` method call.
