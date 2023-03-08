@@ -740,7 +740,9 @@ All of these API calls require ``admin:jupyterlab`` scope.
 
     Each of the top-level object keys is the string literal exactly as shown.
     The alias information may not be complete.
-    (In other words, the image may have additional aliases that are not shown.)
+    (In other words, the image may have additional aliases that are not
+    shown.)
+    Digest may be ``null`` if the image digest is not known (e.g. for an image that is only present on a remote Docker registry).
 
 ``GET /nublado/spawner/v1/prepulls``
     Returns status of the known prepull configurations.
