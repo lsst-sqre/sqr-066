@@ -158,8 +158,9 @@ If Science Platform administrators need to test pod creation or see the event st
 
        {
            "username": "rra",
-           "status": "pending",
-           "pod": "missing",
+           "status": "running",
+           "pod": "present",
+	   "internal_url": "http://nublado-rra/nb-rra:8888",
            "options": {
                "enable_debug": false,
                "image_list": "lsstsqre/sciplat-lab:w_2022_37",
@@ -194,19 +195,17 @@ If Science Platform administrators need to test pod creation or see the event st
            "events": [
                {
                    "event": "info",
-                   "data": "beginning lab creation for user 'rra'",
+                   "data": "lab creation initiated for rra",
                    "sent": false
                },
-               {
-                   "event": "info",
-                   "data": "namespace 'nublado-rra' created",
-                   "sent": false
-               },
-               {
-                   "event": "progress",
-                   "data": "5.0",
-                   "sent": false
-               }
+	       {
+	           "event": "progress",
+		   "data": "2"
+	       },
+	       {
+	           "event": "complete",
+		   "data": "Operation complete for rra"
+	       }
            ]
        }
 
@@ -214,6 +213,7 @@ If Science Platform administrators need to test pod creation or see the event st
     ``status`` is one of ``pending``, ``running``, ``terminating``, or ``failed``, and corresponds to the ``phase`` field of a Kubernetes PodStatus object.
     ``pod`` is one of ``present`` or ``missing`` and indicates the lab controller's understanding of whether the corresponding Kubernetes pod exists.
     (This is relevant primarily for a lab in ``failed`` status.)
+    ``internal_url`` will only be present for a pod with ``status`` equal to ``running`` and ``pod`` equal to ``present`` and will be a string representing the URL from which the Hub can access the Kubernetes pod.  This URL is only valid within the Kubernetes cluster.
     ``events`` (see the ``GET /nublado/spawner/v1/labs/<username>/events``) is a list of events for the current operation for the current user.  These events will continue to be available until lab creation is attempted again for that user, or the lab controller restarts or garbage-collects old information.
 
     If lab creation for that user was attempted but failed, the record of that failure is retained with a ``failed`` status.
