@@ -13,7 +13,7 @@ Creating a pod may also require privileged setup actions, such as creating a hom
 JupyterHub provides a Kubernetes spawner that can be used for this purpose, but it requires granting extensive Kubernetes permissions directly to JupyterHub, a complex piece of software that is directly exposed to user requests.
 This tech note proposes an alternative design using a JupyterHub spawner implementation that delegates all of its work to a RESTful web service.
 That service would act as a Kubernetes controller, managing user labs and associated Kubernetes resources, as well as associated Science Platform business logic such as user home directory creation, construction of the lab options form, and image pre-pulling.
-This same approach can be used for creating Dask_ pods for parallel computation within the Science Platform.
+This same approach can be used for creating Dask_ pods for parallel computation within the Science Platform or other per-user container-based features, 
 
 .. _Dask: https://www.dask.org/
 
